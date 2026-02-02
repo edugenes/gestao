@@ -1,0 +1,18 @@
+# Environment (nunca versionar)
+.env
+.env.local
+.env.*.local
+
+# Dependencies e build
+node_modules/
+dist/
+build/
+dist-ssr/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+coverage/

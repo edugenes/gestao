@@ -1,0 +1,348 @@
+// Prisma Schema - Sistema de Gerenciamento de Patrimônio
+// Banco: PostgreSQL | Versionamento: migrations
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Fase 1 – Usuários e perfis
+enum Role {
+  ADMIN
+  GESTOR
+  OPERADOR
+  CONSULTA
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String   // hash bcrypt, nunca texto puro
+  role      Role     @default(OPERADOR)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // soft delete
+
+  @@map("users")
+}
+
+// Fase 2 – Estrutura organizacional (Unidade → Prédio → Andar → Setor)
+model Unidade {
+  id        String   @id @default(uuid())
+  nome      String
+  codigo    String?  @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  predios   Predio[]
+
+  @@map("unidades")
+}
+
+model Predio {
+  id        String   @id @default(uuid())
+  unidadeId String
+  nome      String
+  codigo    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  unidade   Unidade  @relation(fields: [unidadeId], references: [id])
+  andares   Andar[]
+
+  @@map("predios")
+}
+
+model Andar {
+  id        String   @id @default(uuid())
+  predioId  String
+  nome      String
+  codigo    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  predio    Predio   @relation(fields: [predioId], references: [id])
+  setores   Setor[]
+
+  @@map("andares")
+}
+
+model CentroCusto {
+  id         String   @id @default(uuid())
+  codigo     String   @unique
+  descricao  String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
+
+  setores    Setor[]
+
+  @@map("centros_custo")
+}
+
+model Setor {
+  id             String       @id @default(uuid())
+  andarId        String
+  centroCustoId  String?
+  nome           String
+  codigo         String?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  andar          Andar        @relation(fields: [andarId], references: [id])
+  centroCusto    CentroCusto? @relation(fields: [centroCustoId], references: [id])
+  bens           Bem[]
+  movimentacoesOrigem  Movimentacao[] @relation("MovimentacaoOrigem")
+  movimentacoesDestino Movimentacao[] @relation("MovimentacaoDestino")
+
+  @@map("setores")
+}
+
+// Fase 3 – Cadastro de bens patrimoniais
+enum EstadoConservacao {
+  OTIMO
+  BOM
+  REGULAR
+  RUIM
+  PESSIMO
+}
+
+enum SituacaoBem {
+  EM_USO
+  EM_MANUTENCAO
+  OCIOSO
+  BAIXADO
+}
+
+model Categoria {
+  id            String         @id @default(uuid())
+  nome          String
+  codigo        String?        @unique
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  subcategorias Subcategoria[]
+
+  @@map("categorias")
+}
+
+model Subcategoria {
+  id         String   @id @default(uuid())
+  categoriaId String
+  nome       String
+  codigo     String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
+
+  categoria  Categoria @relation(fields: [categoriaId], references: [id])
+  bens       Bem[]
+
+  @@map("subcategorias")
+}
+
+model Bem {
+  id                 String             @id @default(uuid())
+  numeroPatrimonial   String             @unique // imutável
+  setorId            String             // vínculo organizacional obrigatório
+  subcategoriaId     String?
+  marca              String?
+  modelo             String?
+  numeroSerie        String?
+  valorAquisicao     Decimal            @db.Decimal(15, 2)
+  dataAquisicao      DateTime
+  vidaUtilMeses      Int
+  estadoConservacao  EstadoConservacao
+  situacao           SituacaoBem         @default(EM_USO)
+  observacoes        String?
+  active             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+
+  setor              Setor              @relation(fields: [setorId], references: [id])
+  subcategoria       Subcategoria?     @relation(fields: [subcategoriaId], references: [id])
+  historico          BemHistorico[]
+  movimentacoes      Movimentacao[]
+  inventarioItens    InventarioItem[]
+  manutencoes        Manutencao[]
+  depreciacoes       Depreciacao[]
+  baixa              Baixa?
+
+  @@map("bens")
+}
+
+model BemHistorico {
+  id           String   @id @default(uuid())
+  bemId        String
+  campo        String   // nome do campo alterado
+  valorAnterior String?  @map("valor_anterior") // JSON ou texto
+  valorNovo    String?  @map("valor_novo")
+  userId       String?  @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  bem          Bem      @relation(fields: [bemId], references: [id], onDelete: Cascade)
+
+  @@map("bens_historico")
+}
+
+// Fase 4 – Movimentações patrimoniais
+enum TipoMovimentacao {
+  TRANSFERENCIA
+  EMPRESTIMO
+  MANUTENCAO
+  DEVOLUCAO
+}
+
+model Movimentacao {
+  id              String           @id @default(uuid())
+  bemId           String
+  tipo            TipoMovimentacao
+  setorOrigemId   String?          @map("setor_origem_id")
+  setorDestinoId  String?          @map("setor_destino_id")
+  dataMovimentacao DateTime        @map("data_movimentacao")
+  dataDevolucao   DateTime?        @map("data_devolucao") // para empréstimo
+  observacoes     String?
+  userId          String?          @map("user_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  bem             Bem              @relation(fields: [bemId], references: [id], onDelete: Restrict)
+  setorOrigem     Setor?           @relation("MovimentacaoOrigem", fields: [setorOrigemId], references: [id])
+  setorDestino    Setor?           @relation("MovimentacaoDestino", fields: [setorDestinoId], references: [id])
+
+  @@map("movimentacoes")
+}
+
+// Fase 5 – Inventário patrimonial
+enum StatusInventario {
+  ABERTO
+  FECHADO
+}
+
+model Inventario {
+  id          String    @id @default(uuid())
+  descricao   String
+  dataInicio  DateTime   @map("data_inicio")
+  dataFim     DateTime?  @map("data_fim")
+  status      StatusInventario @default(ABERTO)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  itens       InventarioItem[]
+
+  @@map("inventarios")
+}
+
+model InventarioItem {
+  id             String    @id @default(uuid())
+  inventarioId   String     @map("inventario_id")
+  bemId          String     @map("bem_id")
+  conferido      Boolean    @default(false)
+  dataConferencia DateTime? @map("data_conferencia")
+  userId         String?    @map("user_id")
+  divergencia    String?    // apenas registra, não altera bem
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  inventario     Inventario @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  bem            Bem        @relation(fields: [bemId], references: [id], onDelete: Restrict)
+
+  @@map("inventario_itens")
+}
+
+// Fase 6 – Manutenção (preventiva/corretiva)
+enum TipoManutencao {
+  PREVENTIVA
+  CORRETIVA
+}
+
+model Fornecedor {
+  id        String   @id @default(uuid())
+  nome      String
+  contato   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  manutencoes Manutencao[]
+
+  @@map("fornecedores")
+}
+
+model Manutencao {
+  id            String        @id @default(uuid())
+  bemId         String        @map("bem_id")
+  tipo          TipoManutencao
+  dataInicio    DateTime      @map("data_inicio")
+  dataFim      DateTime?      @map("data_fim")
+  custo        Decimal?      @db.Decimal(15, 2)
+  fornecedorId String?       @map("fornecedor_id")
+  observacoes   String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  bem           Bem           @relation(fields: [bemId], references: [id], onDelete: Restrict)
+  fornecedor    Fornecedor?   @relation(fields: [fornecedorId], references: [id])
+
+  @@map("manutencoes")
+}
+
+// Fase 7 – Depreciação
+enum MetodoDepreciacao {
+  LINEAR
+  ACELERADA
+}
+
+model Depreciacao {
+  id              String            @id @default(uuid())
+  bemId           String            @map("bem_id")
+  mesReferencia   DateTime          @map("mes_referencia") // primeiro dia do mês
+  valorDepreciado Decimal           @map("valor_depreciado") @db.Decimal(15, 2)
+  metodo          MetodoDepreciacao
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  bem             Bem               @relation(fields: [bemId], references: [id], onDelete: Cascade)
+
+  @@map("depreciacoes")
+}
+
+// Fase 8 – Baixa patrimonial
+enum MotivoBaixa {
+  OBSOLESCENCIA
+  PERDA
+  DOACAO
+  VENDA
+}
+
+model Baixa {
+  id             String     @id @default(uuid())
+  bemId          String     @unique @map("bem_id") // um bem só pode ter uma baixa
+  dataBaixa      DateTime   @map("data_baixa")
+  motivo         MotivoBaixa
+  valorRealizado Decimal?   @map("valor_realizado") @db.Decimal(15, 2)
+  observacoes    String?
+  userId         String?    @map("user_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  bem            Bem        @relation(fields: [bemId], references: [id], onDelete: Restrict)
+
+  @@map("baixas")
+}
