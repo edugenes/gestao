@@ -30,6 +30,7 @@ import {
   type InventarioItemResponse,
 } from '@/lib/api-inventarios';
 import { fetchBens } from '@/lib/api-bens';
+import { QrScanner } from '@/components/QrScanner';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,7 @@ export default function Inventory() {
   const [dialogNovo, setDialogNovo] = useState(false);
   const [dialogAddItem, setDialogAddItem] = useState(false);
   const [dialogConferir, setDialogConferir] = useState<InventarioItemResponse | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const { data: inventariosData } = useQuery({
     queryKey: ['inventarios', page],
@@ -139,8 +141,44 @@ export default function Inventory() {
     queryClient.invalidateQueries({ queryKey: ['inventario-itens'] });
   };
 
+  const handleQrScan = async (decodedText: string) => {
+    const numero = decodedText.trim();
+    if (!numero || !effectiveId) return;
+    const item = itens.find(
+      (i) => (i.numeroPatrimonial ?? '').trim().toLowerCase() === numero.toLowerCase()
+    );
+    if (!item) {
+      toast({
+        title: 'Bem não está neste inventário',
+        description: `Número: ${numero}. Adicione o bem ao inventário primeiro.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (item.conferido) {
+      toast({ title: 'Item já conferido', description: item.numeroPatrimonial ?? numero });
+      return;
+    }
+    try {
+      await updateInventarioItem(item.id, {
+        conferido: true,
+        dataConferencia: new Date().toISOString(),
+      });
+      invalidate();
+      toast({ title: 'Item conferido', description: item.numeroPatrimonial ?? numero });
+    } catch (e) {
+      toast({ title: 'Erro ao conferir', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <QrScanner
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        onScan={handleQrScan}
+        title="Ler QR Code – conferir item"
+      />
       <div className="page-header">
         <div>
           <h1 className="page-title">Inventário</h1>
@@ -149,7 +187,7 @@ export default function Inventory() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" disabled>
+          <Button variant="outline" onClick={() => setQrOpen(true)} disabled={!effectiveId || selectedInventario?.status !== 'ABERTO'}>
             <QrCode className="mr-2 h-4 w-4" />
             Ler QR Code
           </Button>

@@ -57,6 +57,13 @@ export interface UpdateBemBody {
   observacoes?: string | null;
 }
 
+export interface BemEtiquetaItem {
+  id: string;
+  numeroPatrimonial: string;
+  marca: string | null;
+  modelo: string | null;
+}
+
 export function fetchBens(params: { page?: number; limit?: number; setorId?: string; situacao?: string; numeroPatrimonial?: string } = {}) {
   const sp = new URLSearchParams();
   if (params.page != null) sp.set('page', String(params.page));
@@ -66,6 +73,22 @@ export function fetchBens(params: { page?: number; limit?: number; setorId?: str
   if (params.numeroPatrimonial) sp.set('numeroPatrimonial', params.numeroPatrimonial);
   const q = sp.toString();
   return apiGet<BensListResponse>(`/bens${q ? `?${q}` : ''}`);
+}
+
+/** Lista bens com dados mínimos para geração de etiquetas em lote. */
+export function fetchBensParaEtiquetas(params: {
+  setorId?: string;
+  situacao?: string;
+  numeroPatrimonial?: string;
+  limit?: number;
+} = {}) {
+  const sp = new URLSearchParams();
+  if (params.setorId) sp.set('setorId', params.setorId);
+  if (params.situacao) sp.set('situacao', params.situacao);
+  if (params.numeroPatrimonial) sp.set('numeroPatrimonial', params.numeroPatrimonial);
+  if (params.limit != null) sp.set('limit', String(params.limit));
+  const q = sp.toString();
+  return apiGet<BemEtiquetaItem[]>(`/bens/etiquetas${q ? `?${q}` : ''}`);
 }
 
 export function fetchBemById(id: string) {

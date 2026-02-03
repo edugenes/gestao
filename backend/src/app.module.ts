@@ -13,6 +13,7 @@ import { ManutencoesModule } from './modules/manutencoes/manutencoes.module';
 import { DepreciacoesModule } from './modules/depreciacoes/depreciacoes.module';
 import { BaixasModule } from './modules/baixas/baixas.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     DepreciacoesModule,
     BaixasModule,
     DashboardModule,
+    AuditModule,
   ],
   providers: [
     {

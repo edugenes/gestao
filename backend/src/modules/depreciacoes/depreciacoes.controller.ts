@@ -34,6 +34,16 @@ export class DepreciacoesController {
     return this.service.create(dto);
   }
 
+  @Post('calcular-mensal')
+  @Roles(Role.ADMIN, Role.GESTOR)
+  @ApiOperation({ summary: 'Calcular e registrar depreciação mensal para todos os bens elegíveis (job/cron)' })
+  @ApiResponse({ status: 201, description: 'Quantidade processada e registros criados' })
+  async calcularMensal(@Body() body: { mesReferencia: string; metodo?: 'LINEAR' | 'ACELERADA' }): Promise<{ processados: number; criados: number }> {
+    const mesReferencia = typeof body?.mesReferencia === 'string' ? body.mesReferencia : '';
+    const metodo = body?.metodo ?? 'LINEAR';
+    return this.service.calcularMensal(mesReferencia, metodo);
+  }
+
   @Get()
   @Roles(Role.ADMIN, Role.GESTOR, Role.OPERADOR, Role.CONSULTA)
   @ApiOperation({ summary: 'Listar depreciações (paginado)' })

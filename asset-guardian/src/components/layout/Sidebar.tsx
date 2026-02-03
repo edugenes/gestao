@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
+  Tag,
   ArrowLeftRight,
   ClipboardCheck,
   Wrench,
@@ -21,6 +22,7 @@ import { cn } from '@/lib/utils';
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/bens', icon: Package, label: 'Bens Patrimoniais' },
+  { path: '/bens/etiquetas', icon: Tag, label: 'Etiquetas em lote' },
   { path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentações' },
   { path: '/inventario', icon: ClipboardCheck, label: 'Inventário' },
   { path: '/manutencao', icon: Wrench, label: 'Manutenção' },

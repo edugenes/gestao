@@ -110,4 +110,17 @@ export class BensRepository {
       include: { setor: true, subcategoria: true },
     });
   }
+
+  /** Bens ativos (não baixados) com data de aquisição até o fim do mês – para cálculo de depreciação. */
+  async findManyEligibleForDepreciacao(mesReferencia: Date): Promise<Array<{ id: string; valorAquisicao: Decimal; vidaUtilMeses: number }>> {
+    const fimDoMes = new Date(mesReferencia.getFullYear(), mesReferencia.getMonth() + 1, 0, 23, 59, 59, 999);
+    return this.prisma.bem.findMany({
+      where: {
+        deletedAt: null,
+        situacao: { not: 'BAIXADO' },
+        dataAquisicao: { lte: fimDoMes },
+      },
+      select: { id: true, valorAquisicao: true, vidaUtilMeses: true },
+    });
+  }
 }

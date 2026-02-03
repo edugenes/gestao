@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import type { JwtPayload } from '../../shared/auth';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { AuditService } from '../audit/audit.service';
 
 export interface TokenResponse {
   accessToken: string;
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<{ id: string; email: string; role: Role } | null> {
@@ -35,8 +37,10 @@ export class AuthService {
   async login(email: string, password: string): Promise<TokenResponse> {
     const user = await this.validateUser(email, password);
     if (!user) {
+      this.audit.log({ entity: 'User', action: 'LOGIN_FAILED', metadata: { email } }).catch(() => {});
       throw new UnauthorizedException('E-mail ou senha inválidos');
     }
+    this.audit.log({ entity: 'User', entityId: user.id, action: 'LOGIN_SUCCESS', userId: user.id }).catch(() => {});
     return this.generateTokens(user.id, user.email, user.role);
   }
 

@@ -75,8 +75,8 @@ export default function NovoBem() {
   const mutation = useMutation({
     mutationFn: (body: CreateBemBody) => createBem(body),
     onSuccess: (data) => {
-      toast({ title: 'Bem patrimonial cadastrado com sucesso.' });
-      navigate(`/bens/${data.id}`);
+      toast({ title: 'Bem patrimonial cadastrado. Imprima a etiqueta para colar no bem.' });
+      navigate(`/bens/${data.id}/etiqueta`);
     },
     onError: (e: Error) => {
       toast({

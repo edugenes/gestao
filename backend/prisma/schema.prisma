@@ -346,3 +346,16 @@ model Baixa {
 
   @@map("baixas")
 }
+
+// Logs de auditoria – imutáveis (apenas inserção)
+model AuditLog {
+  id        String   @id @default(uuid())
+  entity   String   @map("entity")   // ex: "User", "Bem", "Movimentacao"
+  entityId String?  @map("entity_id")
+  action   String   @map("action")   // ex: "LOGIN", "CREATE", "UPDATE", "DELETE"
+  userId   String?  @map("user_id")
+  metadata Json?    @map("metadata") // dados adicionais (nunca senhas)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}

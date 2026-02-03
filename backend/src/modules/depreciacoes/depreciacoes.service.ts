@@ -47,6 +47,32 @@ export class DepreciacoesService {
     return list.map((d) => this.toResponse(d));
   }
 
+  /**
+   * Calcula e registra a depreciação mensal (método linear) para todos os bens elegíveis
+   * que ainda não possuem registro no mês. Pode ser chamado por job/cron ou manualmente.
+   */
+  async calcularMensal(mesReferencia: string, metodo: 'LINEAR' | 'ACELERADA' = 'LINEAR'): Promise<{ processados: number; criados: number }> {
+    const [y, m] = mesReferencia.split('-').map(Number);
+    if (!y || !m || m < 1 || m > 12) throw new BadRequestException('mesReferencia deve ser YYYY-MM');
+    const ref = new Date(y, m - 1, 1);
+    const bens = await this.bensService.findManyEligibleForDepreciacao(ref);
+    let criados = 0;
+    for (const bem of bens) {
+      const existing = await this.repository.findByBemAndMes(bem.id, ref);
+      if (existing) continue;
+      const vidaUtil = bem.vidaUtilMeses > 0 ? bem.vidaUtilMeses : 60;
+      const valorDep = Number(bem.valorAquisicao) / vidaUtil;
+      await this.repository.create({
+        bemId: bem.id,
+        mesReferencia: ref,
+        valorDepreciado: new Decimal(Math.round(valorDep * 100) / 100),
+        metodo,
+      });
+      criados++;
+    }
+    return { processados: bens.length, criados };
+  }
+
   private toResponse(d: {
     id: string;
     bemId: string;

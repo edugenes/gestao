@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Index from "./pages/Index";
 import Assets from "./pages/Assets";
 import AssetDetail from "./pages/AssetDetail";
+import EtiquetaBem from "./pages/EtiquetaBem";
+import EtiquetasLote from "./pages/EtiquetasLote";
 import NovoBem from "./pages/NovoBem";
 import EditarBem from "./pages/EditarBem";
 import Movements from "./pages/Movements";
@@ -74,11 +76,31 @@ const App = () => (
               }
             />
             <Route
+              path="/bens/etiquetas"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EtiquetasLote />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/bens/:id/editar"
               element={
                 <ProtectedRoute>
                   <MainLayout>
                     <EditarBem />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bens/:id/etiqueta"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <EtiquetaBem />
                   </MainLayout>
                 </ProtectedRoute>
               }

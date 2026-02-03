@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -14,7 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fetchBemById, fetchBemHistorico } from '@/lib/api-bens';
+import { QrScanner } from '@/components/QrScanner';
+import { fetchBemById, fetchBemHistorico, fetchBens } from '@/lib/api-bens';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -27,6 +30,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export default function AssetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [qrOpen, setQrOpen] = useState(false);
 
   const { data: bem, isLoading, error } = useQuery({
     queryKey: ['bem', id],
@@ -65,8 +70,25 @@ export default function AssetDetail() {
   const status = statusConfig[bem.situacao] ?? { label: bem.situacao, className: 'status-active' };
   const descricao = [bem.marca, bem.modelo].filter(Boolean).join(' ') || bem.numeroPatrimonial;
 
+  const handleQrScan = async (decodedText: string) => {
+    const numero = decodedText.trim();
+    if (!numero) return;
+    try {
+      const res = await fetchBens({ numeroPatrimonial: numero, limit: 1 });
+      if (res.data?.length) {
+        navigate(`/bens/${res.data[0].id}`);
+        toast({ title: 'Bem encontrado', description: res.data[0].numeroPatrimonial });
+      } else {
+        toast({ title: 'Bem não encontrado', description: `Número: ${numero}`, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Erro ao buscar bem', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <QrScanner open={qrOpen} onClose={() => setQrOpen(false)} onScan={handleQrScan} title="Ler QR Code – ir para bem" />
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/bens')}>
           <ArrowLeft className="h-5 w-5" />
@@ -79,13 +101,13 @@ export default function AssetDetail() {
           <p className="mt-1 font-mono text-sm text-primary">{bem.numeroPatrimonial}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" onClick={() => setQrOpen(true)}>
             <QrCode className="mr-2 h-4 w-4" />
-            QR Code
+            Ler QR Code
           </Button>
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/bens/${bem.id}/etiqueta`)}>
             <Printer className="mr-2 h-4 w-4" />
-            Imprimir
+            Imprimir etiqueta
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate(`/bens/${bem.id}/editar`)}>
             <Edit className="mr-2 h-4 w-4" />

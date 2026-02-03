@@ -18,7 +18,7 @@ import { RolesGuard } from '../../shared/auth/roles.guard';
 import { Roles, CurrentUser } from '../../shared/auth/decorators';
 import type { RequestUser } from '../../shared/auth/decorators';
 import { Role } from '@prisma/client';
-import { BensService, type BemResponse, type HistoricoItem } from './bens.service';
+import { BensService, type BemResponse, type BemEtiquetaItem, type HistoricoItem } from './bens.service';
 import { createBemSchema, type CreateBemDto } from './dto/create-bem.dto';
 import { updateBemSchema, type UpdateBemDto } from './dto/update-bem.dto';
 
@@ -35,9 +35,9 @@ export class BensController {
   @ApiResponse({ status: 201, description: 'Bem criado' })
   @ApiResponse({ status: 409, description: 'Número patrimonial já cadastrado' })
   @ApiResponse({ status: 404, description: 'Setor ou subcategoria não encontrado' })
-  async create(@Body() body: unknown): Promise<BemResponse> {
+  async create(@Body() body: unknown, @CurrentUser() user?: RequestUser): Promise<BemResponse> {
     const dto = createBemSchema.parse(body) as CreateBemDto;
-    return this.service.create(dto);
+    return this.service.create(dto, user?.id ?? null);
   }
 
   @Get()
@@ -61,6 +61,29 @@ export class BensController {
     return this.service.findMany(
       { setorId, situacao, numeroPatrimonial },
       pageNum,
+      limitNum,
+    );
+  }
+
+  @Get('etiquetas')
+  @Roles(Role.ADMIN, Role.GESTOR, Role.OPERADOR, Role.CONSULTA)
+  @ApiOperation({ summary: 'Listar bens para geração de etiquetas em lote (dados mínimos)' })
+  @ApiQuery({ name: 'setorId', required: false })
+  @ApiQuery({ name: 'situacao', required: false })
+  @ApiQuery({ name: 'numeroPatrimonial', required: false })
+  @ApiQuery({ name: 'limit', required: false, description: 'Máx. 2000' })
+  @ApiResponse({ status: 200, description: 'Lista de bens para etiquetas' })
+  async findForEtiquetas(
+    @Query('setorId') setorId?: string,
+    @Query('situacao') situacao?: string,
+    @Query('numeroPatrimonial') numeroPatrimonial?: string,
+    @Query('limit') limit?: string,
+  ): Promise<BemEtiquetaItem[]> {
+    const limitNum = limit
+      ? Math.min(2000, Math.max(1, parseInt(limit, 10)))
+      : 500;
+    return this.service.findManyForEtiquetas(
+      { setorId, situacao, numeroPatrimonial },
       limitNum,
     );
   }
@@ -108,7 +131,7 @@ export class BensController {
   @ApiOperation({ summary: 'Soft delete do bem' })
   @ApiResponse({ status: 204, description: 'Bem desativado' })
   @ApiResponse({ status: 404, description: 'Bem não encontrado' })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.service.softDelete(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: RequestUser): Promise<void> {
+    await this.service.softDelete(id, user?.id ?? null);
   }
 }

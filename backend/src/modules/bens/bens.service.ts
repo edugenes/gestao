@@ -4,6 +4,7 @@ import { BensRepository, type ListBensFilter } from './bens.repository';
 import { BensHistoricoRepository } from './bens-historico.repository';
 import { SetoresService } from '../estrutura-organizacional/setores/setores.service';
 import { SubcategoriasRepository } from './subcategorias/subcategorias.repository';
+import { AuditService } from '../audit/audit.service';
 import type { CreateBemDto } from './dto/create-bem.dto';
 import type { UpdateBemDto } from './dto/update-bem.dto';
 import type { Bem } from '@prisma/client';
@@ -25,9 +26,10 @@ export class BensService {
     private readonly historicoRepository: BensHistoricoRepository,
     private readonly setoresService: SetoresService,
     private readonly subcategoriasRepository: SubcategoriasRepository,
+    private readonly audit: AuditService,
   ) {}
 
-  async create(dto: CreateBemDto): Promise<BemResponse> {
+  async create(dto: CreateBemDto, userId?: string | null): Promise<BemResponse> {
     const existing = await this.repository.findByNumeroPatrimonial(dto.numeroPatrimonial);
     if (existing) throw new ConflictException('Número patrimonial já cadastrado');
     await this.setoresService.findById(dto.setorId);
@@ -50,6 +52,7 @@ export class BensService {
       situacao: dto.situacao ?? 'EM_USO',
       observacoes: dto.observacoes ?? null,
     });
+    this.audit.log({ entity: 'Bem', entityId: bem.id, action: 'CREATE', userId: userId ?? null, metadata: { numeroPatrimonial: bem.numeroPatrimonial } }).catch(() => {});
     return this.toResponse(bem);
   }
 
@@ -73,6 +76,24 @@ export class BensService {
     };
   }
 
+  /** Lista bens com dados mínimos para geração de etiquetas em lote (QR). */
+  async findManyForEtiquetas(
+    filter: { setorId?: string; situacao?: string; numeroPatrimonial?: string },
+    limit: number,
+  ): Promise<BemEtiquetaItem[]> {
+    const f: ListBensFilter = {};
+    if (filter.setorId) f.setorId = filter.setorId;
+    if (filter.situacao) f.situacao = filter.situacao as ListBensFilter['situacao'];
+    if (filter.numeroPatrimonial) f.numeroPatrimonial = filter.numeroPatrimonial;
+    const data = await this.repository.findMany(f, 0, limit);
+    return data.map((b) => ({
+      id: b.id,
+      numeroPatrimonial: b.numeroPatrimonial,
+      marca: b.marca,
+      modelo: b.modelo,
+    }));
+  }
+
   async findById(id: string): Promise<BemResponse> {
     const bem = await this.repository.findById(id);
     if (!bem) throw new NotFoundException('Bem não encontrado');
@@ -83,6 +104,11 @@ export class BensService {
     const bem = await this.repository.findById(bemId);
     if (!bem) throw new NotFoundException('Bem não encontrado');
     return this.historicoRepository.findManyByBemId(bemId, limit);
+  }
+
+  /** Usado pelo módulo de depreciação para cálculo mensal automático. */
+  async findManyEligibleForDepreciacao(mesReferencia: Date): Promise<Array<{ id: string; valorAquisicao: Decimal; vidaUtilMeses: number }>> {
+    return this.repository.findManyEligibleForDepreciacao(mesReferencia);
   }
 
   /** Usado pelo módulo de movimentações: transferência altera setor e registra histórico. */
@@ -214,13 +240,17 @@ export class BensService {
     const updated = Object.keys(updateData).length > 0
       ? await this.repository.update(id, updateData)
       : bem;
+    if (Object.keys(updateData).length > 0) {
+      this.audit.log({ entity: 'Bem', entityId: id, action: 'UPDATE', userId }).catch(() => {});
+    }
     return this.toResponse(updated as Bem & { setor?: { id: string; nome: string }; subcategoria?: { id: string; nome: string } | null });
   }
 
-  async softDelete(id: string): Promise<void> {
+  async softDelete(id: string, userId?: string | null): Promise<void> {
     const bem = await this.repository.findById(id);
     if (!bem) throw new NotFoundException('Bem não encontrado');
     await this.repository.softDelete(id);
+    this.audit.log({ entity: 'Bem', entityId: id, action: 'DELETE', userId: userId ?? null, metadata: { numeroPatrimonial: bem.numeroPatrimonial } }).catch(() => {});
   }
 
   private toResponse(bem: Bem & { setor?: { id?: string; nome: string }; subcategoria?: { id?: string; nome: string } | null }): BemResponse {
@@ -271,4 +301,11 @@ export interface HistoricoItem {
   valorNovo: string | null;
   userId: string | null;
   createdAt: Date;
+}
+
+export interface BemEtiquetaItem {
+  id: string;
+  numeroPatrimonial: string;
+  marca: string | null;
+  modelo: string | null;
 }
