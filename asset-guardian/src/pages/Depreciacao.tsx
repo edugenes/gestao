@@ -34,6 +34,7 @@ import {
   type MetodoDepreciacao,
   type CreateDepreciacaoBody,
 } from '@/lib/api-depreciacoes';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import { fetchBens } from '@/lib/api-bens';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,7 @@ export default function Depreciacao() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['depreciacoes'] });
+    invalidateDashboardQueries(queryClient);
   };
 
   return (

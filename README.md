@@ -173,6 +173,17 @@ Consulte os arquivos `.env.example` em cada pasta para a lista completa.
 | `npm run dev` | Servidor de desenvolvimento (Vite) |
 | `npm run build` | Build para produção |
 | `npm run preview` | Preview do build |
+| `npm run android` | Build + sync + abrir projeto Android no Android Studio |
+| `npx cap sync` | Sincronizar `dist` com o app Android (Capacitor) |
+
+---
+
+## App Android (inventário com câmera na rede local)
+
+O frontend pode ser usado como **app Android** (Capacitor). No app, a câmera funciona em **rede local** sem HTTPS nem certificado.
+
+- **Gerar APK:** [APP_ANDROID.md](APP_ANDROID.md)  
+- No primeiro uso: abra o app → **Configurar servidor** na tela de login → informe `http://IP_DO_PC:3001` → faça login.
 
 ---
 

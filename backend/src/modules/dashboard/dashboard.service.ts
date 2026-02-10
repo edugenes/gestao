@@ -77,4 +77,87 @@ export class DashboardService {
       },
     });
   }
+
+  /**
+   * Retorna histórico de depreciação agregado por mês (últimos 6 meses).
+   * Para cada mês, calcula o valor patrimonial líquido (valor aquisição - depreciação acumulada).
+   */
+  async getDepreciacaoHistorico(): Promise<Array<{ mes: string; valorPatrimonial: number; depreciacaoMensal: number }>> {
+    // Busca os últimos 6 meses com depreciação registrada
+    const depreciacoes = await this.prisma.depreciacao.findMany({
+      orderBy: { mesReferencia: 'desc' },
+      take: 1000, // Limite razoável para processar
+      select: {
+        mesReferencia: true,
+        valorDepreciado: true,
+      },
+    });
+
+    if (depreciacoes.length === 0) {
+      return [];
+    }
+
+    // Agrupa por mês e soma depreciação mensal
+    const porMes = new Map<string, number>();
+    for (const dep of depreciacoes) {
+      const mes = dep.mesReferencia.getMonth() + 1;
+      const mesKey = `${dep.mesReferencia.getFullYear()}-${String(mes).padStart(2, '0')}`;
+      const atual = porMes.get(mesKey) ?? 0;
+      porMes.set(mesKey, atual + Number(dep.valorDepreciado));
+    }
+
+    // Pega os últimos 6 meses únicos
+    const mesesUnicos = Array.from(porMes.keys())
+      .sort()
+      .reverse()
+      .slice(0, 6)
+      .reverse();
+
+    if (mesesUnicos.length === 0) {
+      return [];
+    }
+
+    // Busca valor patrimonial total uma única vez (aproximação: valor atual)
+    const valorTotal = Number(
+      (
+        await this.prisma.bem.aggregate({
+          where: { deletedAt: null, situacao: { not: 'BAIXADO' } },
+          _sum: { valorAquisicao: true },
+        })
+      )._sum.valorAquisicao ?? 0
+    );
+
+    // Para cada mês, calcula valor patrimonial líquido
+    // O valor patrimonial diminui ao longo do tempo (depreciação acumulada cresce)
+    const resultado = [];
+    let depAcumulada = 0;
+    for (const mes of mesesUnicos) {
+      const depreciacaoMensal = porMes.get(mes) ?? 0;
+      // Acumula depreciação ao longo dos meses (do mais antigo para o mais recente)
+      depAcumulada += depreciacaoMensal;
+      resultado.push({
+        mes,
+        valorPatrimonial: Math.max(0, valorTotal - depAcumulada),
+        depreciacaoMensal,
+      });
+    }
+
+    return resultado;
+  }
+
+  /**
+   * Retorna contagem de bens por situação (status).
+   */
+  async getBensPorSituacao(): Promise<Array<{ situacao: string; quantidade: number }>> {
+    const result = await this.prisma.bem.groupBy({
+      by: ['situacao'],
+      where: { deletedAt: null },
+      _count: { id: true },
+    });
+
+    return result.map((r) => ({
+      situacao: r.situacao,
+      quantidade: r._count.id,
+    }));
+  }
 }

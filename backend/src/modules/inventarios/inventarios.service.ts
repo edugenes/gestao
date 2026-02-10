@@ -15,7 +15,10 @@ export class InventariosService {
 
   async createInventario(dto: CreateInventarioDto): Promise<InventarioResponse> {
     const dataInicio = new Date(dto.dataInicio);
-    const inv = await this.repository.createInventario({
+    // Enquanto ajustamos a estratégia de inventários parciais,
+    // TODO: reintroduzir fluxo PARCIAL com regra clara.
+    // Por ora, todo novo inventário é populado automaticamente com 100% dos bens ativos.
+    const inv = await this.repository.createInventarioWithAllBens({
       descricao: dto.descricao,
       dataInicio,
     });
@@ -71,7 +74,13 @@ export class InventariosService {
   async findItensByInventario(inventarioId: string): Promise<InventarioItemResponse[]> {
     const inv = await this.repository.findInventarioById(inventarioId);
     if (!inv) throw new NotFoundException('Inventário não encontrado');
-    const itens = await this.repository.findItensByInventario(inventarioId);
+    let itens = await this.repository.findItensByInventario(inventarioId);
+    // Fallback: se ainda não houver itens (inventário antigo ou erro em criação),
+    // garantimos que todos os bens estejam vinculados e recarregamos.
+    if (itens.length === 0) {
+      await this.repository.ensureAllBensInInventario(inventarioId);
+      itens = await this.repository.findItensByInventario(inventarioId);
+    }
     return itens.map((i) => this.toItemResponse(i));
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Settings, Building2, Palette, List, Info } from 'lucide-react';
+import { Settings, Building2, Palette, List, Info, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,12 @@ import {
   ITENS_POR_PAGINA_OPTIONS,
   type InstituicaoConfig,
 } from '@/lib/settings';
+import {
+  isApp,
+  getStoredApiBaseUrl,
+  setStoredApiBaseUrl,
+  clearBaseUrlCache,
+} from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 const THEME_OPTIONS = [
@@ -37,6 +43,7 @@ export default function Configuracoes() {
   });
   const [itensPorPagina, setItensPorPagina] = useState(20);
   const [mounted, setMounted] = useState(false);
+  const [apiBaseUrl, setApiBaseUrl] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -46,6 +53,7 @@ export default function Configuracoes() {
     const s = getSettings();
     setInstituicao(s.instituicao);
     setItensPorPagina(s.itensPorPagina);
+    if (isApp()) setApiBaseUrl(getStoredApiBaseUrl() || 'http://192.168.0.250:3001');
   }, []);
 
   const handleSaveInstituicao = (e: React.FormEvent) => {
@@ -64,6 +72,18 @@ export default function Configuracoes() {
     toast({ title: 'Tema alterado.' });
   };
 
+  const handleSaveServidor = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = apiBaseUrl.trim().replace(/\/$/, '');
+    if (!url) {
+      toast({ title: 'Informe a URL do servidor.', variant: 'destructive' });
+      return;
+    }
+    setStoredApiBaseUrl(url);
+    clearBaseUrlCache();
+    toast({ title: 'Servidor salvo. As próximas requisições usarão esta URL.' });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -72,6 +92,36 @@ export default function Configuracoes() {
           Parâmetros do sistema e preferências de exibição
         </p>
       </div>
+
+      {/* Servidor (só no app) */}
+      {isApp() && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wifi className="h-5 w-5" />
+              Servidor (uso no app)
+            </CardTitle>
+            <CardDescription>
+              URL do backend na rede local. Ex.: http://192.168.0.250:3001
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSaveServidor} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="api-base-url">URL do servidor</Label>
+                <Input
+                  id="api-base-url"
+                  value={apiBaseUrl}
+                  onChange={(e) => setApiBaseUrl(e.target.value)}
+                  placeholder="http://192.168.0.250:3001"
+                  type="url"
+                />
+              </div>
+              <Button type="submit">Salvar e usar este servidor</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Aparência */}
       <Card>

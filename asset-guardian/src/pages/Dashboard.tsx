@@ -21,6 +21,7 @@ export default function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: fetchDashboardStats,
+    refetchOnWindowFocus: true,
   });
   const { data: setoresData } = useQuery({
     queryKey: ['setores'],
@@ -35,17 +36,17 @@ export default function Dashboard() {
   const totalSetores = setoresData?.total ?? setoresData?.data?.length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="page-title text-xl sm:text-2xl">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Visão geral do patrimônio institucional
           </p>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Bens"
           value={totalBens.toLocaleString('pt-BR')}
@@ -66,6 +67,7 @@ export default function Dashboard() {
           subtitle="Itens aguardando conferência"
           icon={AlertTriangle}
           variant="warning"
+          to="/inventario"
         />
         <StatCard
           title="Depreciação Mensal"

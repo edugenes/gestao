@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { apiPost, setApiToken, setOnUnauthorized } from '@/lib/api';
+import { apiPost, setApiToken, setOnUnauthorized, clearBaseUrlCache } from '@/lib/api';
 
 interface User {
   id: string;
@@ -68,10 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokenState(null);
       return;
     }
-    apiPost<{ accessToken: string; refreshToken: string }>('/auth/refresh', { refreshToken: refresh }, { skipAuth: true })
+    apiPost<{ accessToken?: string; refreshToken?: string }>('/auth/refresh', { refreshToken: refresh }, { skipAuth: true })
       .then((data) => {
+        if (!data?.accessToken) {
+          localStorage.removeItem('refreshToken');
+          setTokenState(null);
+          setUser(null);
+          return;
+        }
         setToken(data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         const payload = decodeJwtPayload(data.accessToken);
         const u: User = {
           id: payload.sub ?? '',
@@ -92,13 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const data = await apiPost<{ accessToken: string; refreshToken: string; expiresIn: string }>(
+      // Força re-leitura da URL do servidor (importante no app após "Configurar servidor")
+      clearBaseUrlCache();
+      const data = await apiPost<{ accessToken?: string; refreshToken?: string; expiresIn?: string }>(
         '/auth/login',
         { email, password },
         { skipAuth: true }
       );
+      if (!data?.accessToken) {
+        throw new Error(
+          'Resposta inválida do servidor: token não retornado. Verifique se a URL do servidor está correta e se o backend está rodando.'
+        );
+      }
       setToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('refreshToken', data.refreshToken ?? '');
       const payload = decodeJwtPayload(data.accessToken);
       const u: User = {
         id: payload.sub ?? '',

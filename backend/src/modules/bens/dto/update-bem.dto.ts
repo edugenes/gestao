@@ -19,6 +19,7 @@ export const updateBemSchema = z
       .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
       .optional(),
     vidaUtilMeses: z.number().int().positive('Vida útil em meses deve ser positiva').optional(),
+    garantiaMeses: z.number().int().positive('Garantia em meses deve ser positiva').optional().nullable(),
     estadoConservacao: estadoConservacaoEnum.optional(),
     situacao: situacaoBemEnum.optional(),
     observacoes: z.string().max(2000, 'Observações muito longas').optional().nullable(),

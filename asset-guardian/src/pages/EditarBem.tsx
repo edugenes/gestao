@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
   fetchSubcategorias,
   type UpdateBemBody,
 } from '@/lib/api-bens';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import { fetchSetores } from '@/lib/api-estrutura';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,6 +43,7 @@ export default function EditarBem() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [setorId, setSetorId] = useState('');
   const [subcategoriaId, setSubcategoriaId] = useState('');
   const [marca, setMarca] = useState('');
@@ -50,6 +52,7 @@ export default function EditarBem() {
   const [valorAquisicao, setValorAquisicao] = useState('');
   const [dataAquisicao, setDataAquisicao] = useState('');
   const [vidaUtilMeses, setVidaUtilMeses] = useState('');
+  const [garantiaMeses, setGarantiaMeses] = useState('');
   const [estadoConservacao, setEstadoConservacao] = useState<string>('BOM');
   const [situacao, setSituacao] = useState<string>('EM_USO');
   const [observacoes, setObservacoes] = useState('');
@@ -82,6 +85,7 @@ export default function EditarBem() {
       setValorAquisicao(String(bem.valorAquisicao));
       setDataAquisicao(bem.dataAquisicao.slice(0, 10));
       setVidaUtilMeses(String(bem.vidaUtilMeses));
+      setGarantiaMeses(bem.garantiaMeses ? String(bem.garantiaMeses) : '');
       setEstadoConservacao(bem.estadoConservacao);
       setSituacao(bem.situacao);
       setObservacoes(bem.observacoes ?? '');
@@ -91,6 +95,9 @@ export default function EditarBem() {
   const mutation = useMutation({
     mutationFn: (body: UpdateBemBody) => updateBem(id!, body),
     onSuccess: () => {
+      invalidateDashboardQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['bens'] });
+      queryClient.invalidateQueries({ queryKey: ['bem', id] });
       toast({ title: 'Bem atualizado com sucesso.' });
       navigate(`/bens/${id}`);
     },
@@ -132,6 +139,7 @@ export default function EditarBem() {
       valorAquisicao: valorNum,
       dataAquisicao: dataAquisicao,
       vidaUtilMeses: vidaNum,
+      garantiaMeses: garantiaMeses ? parseInt(garantiaMeses, 10) : null,
       estadoConservacao: estadoConservacao as UpdateBemBody['estadoConservacao'],
       situacao: situacao as UpdateBemBody['situacao'],
       observacoes: observacoes.trim() || null,
@@ -238,7 +246,7 @@ export default function EditarBem() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="space-y-2">
                 <Label htmlFor="valorAquisicao">Valor de aquisição (R$) *</Label>
                 <Input
@@ -261,6 +269,17 @@ export default function EditarBem() {
                   min={1}
                   value={vidaUtilMeses}
                   onChange={(e) => setVidaUtilMeses(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="garantiaMeses">Garantia (meses)</Label>
+                <Input
+                  id="garantiaMeses"
+                  type="number"
+                  min={1}
+                  value={garantiaMeses}
+                  onChange={(e) => setGarantiaMeses(e.target.value)}
+                  placeholder="Opcional"
                 />
               </div>
               <div className="space-y-2">

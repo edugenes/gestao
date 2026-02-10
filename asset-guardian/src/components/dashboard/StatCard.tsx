@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface StatCardProps {
@@ -11,6 +12,8 @@ interface StatCardProps {
     isPositive: boolean;
   };
   variant?: 'default' | 'primary' | 'success' | 'warning' | 'info';
+  to?: string;
+  onClick?: () => void;
 }
 
 const variantStyles = {
@@ -36,13 +39,17 @@ export function StatCard({
   icon: Icon,
   trend,
   variant = 'default',
+  to,
+  onClick,
 }: StatCardProps) {
-  return (
+  const cardContent = (
     <div
       className={cn(
         'stat-card animate-fade-in',
-        variantStyles[variant]
+        variantStyles[variant],
+        (to || onClick) && 'cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]'
       )}
+      onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-2">
@@ -74,4 +81,10 @@ export function StatCard({
       </div>
     </div>
   );
+
+  if (to) {
+    return <Link to={to}>{cardContent}</Link>;
+  }
+
+  return cardContent;
 }

@@ -13,6 +13,7 @@ export interface CreateBemData {
   valorAquisicao: Decimal;
   dataAquisicao: Date;
   vidaUtilMeses: number;
+  garantiaMeses?: number | null;
   estadoConservacao: EstadoConservacao;
   situacao?: SituacaoBem;
   observacoes?: string | null;
@@ -27,6 +28,7 @@ export interface UpdateBemData {
   valorAquisicao?: Decimal;
   dataAquisicao?: Date;
   vidaUtilMeses?: number;
+  garantiaMeses?: number | null;
   estadoConservacao?: EstadoConservacao;
   situacao?: SituacaoBem;
   observacoes?: string | null;

@@ -31,6 +31,7 @@ export function RecentMovements() {
   const { data } = useQuery({
     queryKey: ['movimentacoes', 1, 5],
     queryFn: () => fetchMovimentacoes({ page: 1, limit: 5 }),
+    refetchOnWindowFocus: true,
   });
 
   const movements = data?.data ?? [];

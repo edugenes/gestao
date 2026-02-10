@@ -70,6 +70,18 @@ export default function AssetDetail() {
   const status = statusConfig[bem.situacao] ?? { label: bem.situacao, className: 'status-active' };
   const descricao = [bem.marca, bem.modelo].filter(Boolean).join(' ') || bem.numeroPatrimonial;
 
+  // Garantia: meses e data de término calculada a partir da data de aquisição
+  const garantiaMeses = bem.garantiaMeses ?? null;
+  const garantiaDescricao = garantiaMeses ? `${garantiaMeses} meses` : '-';
+  const garantiaFim =
+    garantiaMeses && garantiaMeses > 0
+      ? (() => {
+          const d = new Date(bem.dataAquisicao);
+          d.setMonth(d.getMonth() + garantiaMeses);
+          return d.toLocaleDateString('pt-BR');
+        })()
+      : '-';
+
   const handleQrScan = async (decodedText: string) => {
     const numero = decodedText.trim();
     if (!numero) return;
@@ -193,7 +205,7 @@ export default function AssetDetail() {
         <TabsContent value="financeiro">
           <div className="card-corporate p-6">
             <h3 className="section-title">Informações Financeiras</h3>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Data de Aquisição</label>
                 <p className="mt-1">
@@ -209,6 +221,14 @@ export default function AssetDetail() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Vida Útil</label>
                 <p className="mt-1">{bem.vidaUtilMeses} meses</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Garantia</label>
+                <p className="mt-1">{garantiaDescricao}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Fim da Garantia</label>
+                <p className="mt-1">{garantiaFim}</p>
               </div>
             </div>
           </div>

@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -187,11 +187,11 @@
   }
 
   .page-header {
-    @apply mb-6 flex items-center justify-between;
+    @apply mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0;
   }
 
   .page-title {
-    @apply text-2xl font-semibold text-foreground;
+    @apply text-xl sm:text-2xl font-semibold text-foreground;
   }
 
   .section-title {

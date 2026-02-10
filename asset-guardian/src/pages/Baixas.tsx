@@ -35,6 +35,7 @@ import {
   type MotivoBaixa,
   type CreateBaixaBody,
 } from '@/lib/api-baixas';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import { fetchBens } from '@/lib/api-bens';
 import { useToast } from '@/hooks/use-toast';
 
@@ -69,6 +70,8 @@ export default function Baixas() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['baixas'] });
+    invalidateDashboardQueries(queryClient);
+    queryClient.invalidateQueries({ queryKey: ['bens'] });
   };
 
   return (

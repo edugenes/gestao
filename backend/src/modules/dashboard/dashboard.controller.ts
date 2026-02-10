@@ -20,4 +20,20 @@ export class DashboardController {
   async getStats(): Promise<DashboardStats> {
     return this.service.getStats();
   }
+
+  @Get('depreciacao-historico')
+  @Roles(Role.ADMIN, Role.GESTOR, Role.OPERADOR, Role.CONSULTA)
+  @ApiOperation({ summary: 'Histórico de depreciação por mês (últimos 6 meses)' })
+  @ApiResponse({ status: 200, description: 'Array com mês, valor patrimonial líquido e depreciação mensal' })
+  async getDepreciacaoHistorico() {
+    return this.service.getDepreciacaoHistorico();
+  }
+
+  @Get('bens-por-situacao')
+  @Roles(Role.ADMIN, Role.GESTOR, Role.OPERADOR, Role.CONSULTA)
+  @ApiOperation({ summary: 'Contagem de bens por situação' })
+  @ApiResponse({ status: 200, description: 'Array com situação e quantidade de bens' })
+  async getBensPorSituacao() {
+    return this.service.getBensPorSituacao();
+  }
 }

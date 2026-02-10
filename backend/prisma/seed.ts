@@ -191,7 +191,10 @@ async function seedDemo(adminId: string): Promise<void> {
     const bem = todosBens[randomInt(0, todosBens.length - 1)];
     const setorOrigem = bem.setorId;
     let setorDestino: string | null = setores[randomInt(0, setores.length - 1)].id;
-    if (setorDestino === setorOrigem) setorDestino = setores[(setores.findIndex((s) => s.id === setorOrigem) + 1) % setores.length].id;
+    if (setorDestino === setorOrigem) {
+      const idx = setores.findIndex((s: { id: string }) => s.id === setorOrigem);
+      setorDestino = setores[(idx + 1) % setores.length].id;
+    }
     const tipo = randomItem(tipos);
     const dataMov = new Date(2022, randomInt(0, 11), randomInt(1, 28));
     try {

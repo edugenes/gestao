@@ -6,7 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // Para testes locais neste computador usamos SQLite.
+  // Em produção/homologação, use PostgreSQL em outra instância ajustando o provider/URL conforme o ambiente.
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -167,9 +169,11 @@ model Bem {
   marca              String?
   modelo             String?
   numeroSerie        String?
-  valorAquisicao     Decimal            @db.Decimal(15, 2)
+  // Em SQLite não usamos tipo nativo Decimal; Prisma persiste como texto/numérico mantendo 2 casas via regra de negócio.
+  valorAquisicao     Decimal
   dataAquisicao      DateTime
   vidaUtilMeses      Int
+  garantiaMeses       Int?              // Garantia do produto em meses (opcional)
   estadoConservacao  EstadoConservacao
   situacao           SituacaoBem         @default(EM_USO)
   observacoes        String?
@@ -293,7 +297,8 @@ model Manutencao {
   tipo          TipoManutencao
   dataInicio    DateTime      @map("data_inicio")
   dataFim      DateTime?      @map("data_fim")
-  custo        Decimal?      @db.Decimal(15, 2)
+  // Custo também mantido como Decimal sem tipo nativo específico em SQLite.
+  custo        Decimal?
   fornecedorId String?       @map("fornecedor_id")
   observacoes   String?
   createdAt     DateTime      @default(now()) @map("created_at")
@@ -315,7 +320,8 @@ model Depreciacao {
   id              String            @id @default(uuid())
   bemId           String            @map("bem_id")
   mesReferencia   DateTime          @map("mes_referencia") // primeiro dia do mês
-  valorDepreciado Decimal           @map("valor_depreciado") @db.Decimal(15, 2)
+  // Valor depreciado mensal como Decimal lógico (sem @db.Decimal em SQLite).
+  valorDepreciado Decimal           @map("valor_depreciado")
   metodo          MetodoDepreciacao
   createdAt        DateTime         @default(now()) @map("created_at")
 
@@ -337,7 +343,8 @@ model Baixa {
   bemId          String     @unique @map("bem_id") // um bem só pode ter uma baixa
   dataBaixa      DateTime   @map("data_baixa")
   motivo         MotivoBaixa
-  valorRealizado Decimal?   @map("valor_realizado") @db.Decimal(15, 2)
+  // Valor realizado na baixa mantido como Decimal lógico.
+  valorRealizado Decimal?   @map("valor_realizado")
   observacoes    String?
   userId         String?    @map("user_id")
   createdAt      DateTime   @default(now()) @map("created_at")

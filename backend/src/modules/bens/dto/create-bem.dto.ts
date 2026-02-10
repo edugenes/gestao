@@ -17,6 +17,7 @@ export const createBemSchema = z.object({
   valorAquisicao: z.number().positive('Valor de aquisição deve ser positivo'),
   dataAquisicao: z.string().datetime({ message: 'Data de aquisição inválida' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
   vidaUtilMeses: z.number().int().positive('Vida útil em meses deve ser positiva'),
+  garantiaMeses: z.number().int().positive('Garantia em meses deve ser positiva').optional().nullable(),
   estadoConservacao: estadoConservacaoEnum,
   situacao: situacaoBemEnum.optional().default('EM_USO'),
   observacoes: z.string().max(2000, 'Observações muito longas').optional().nullable(),

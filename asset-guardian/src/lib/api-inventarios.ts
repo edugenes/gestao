@@ -43,7 +43,9 @@ export function fetchInventarioById(id: string) {
   return apiGet<InventarioResponse>(`/inventarios/${id}`);
 }
 
-export function createInventario(body: { descricao: string; dataInicio: string }) {
+export type TipoInventario = 'GERAL' | 'PARCIAL';
+
+export function createInventario(body: { descricao: string; dataInicio: string; tipo?: TipoInventario }) {
   return apiPost<InventarioResponse>('/inventarios', body);
 }
 

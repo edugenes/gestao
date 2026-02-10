@@ -28,7 +28,10 @@ import {
   addInventarioItem,
   updateInventarioItem,
   type InventarioItemResponse,
+  type TipoInventario,
 } from '@/lib/api-inventarios';
+import { fetchSetores, type SetorItem } from '@/lib/api-estrutura';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import { fetchBens } from '@/lib/api-bens';
 import { QrScanner } from '@/components/QrScanner';
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +92,7 @@ export default function Inventory() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSetorId, setSelectedSetorId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogNovo, setDialogNovo] = useState(false);
   const [dialogAddItem, setDialogAddItem] = useState(false);
@@ -139,7 +143,16 @@ export default function Inventory() {
     queryClient.invalidateQueries({ queryKey: ['inventarios'] });
     queryClient.invalidateQueries({ queryKey: ['inventario'] });
     queryClient.invalidateQueries({ queryKey: ['inventario-itens'] });
+    // Atualiza o dashboard quando inventários/itens são criados ou atualizados
+    invalidateDashboardQueries(queryClient);
   };
+
+  // Setores para seleção rápida do local de conferência (frontend por enquanto)
+  const { data: setoresData } = useQuery({
+    queryKey: ['setores', 1, 500],
+    queryFn: () => fetchSetores({ page: 1, limit: 500 }),
+  });
+  const setores: SetorItem[] = setoresData?.data ?? [];
 
   const handleQrScan = async (decodedText: string) => {
     const numero = decodedText.trim();
@@ -178,34 +191,66 @@ export default function Inventory() {
         onClose={() => setQrOpen(false)}
         onScan={handleQrScan}
         title="Ler QR Code – conferir item"
+        onError={(message) =>
+          toast({
+            title: 'Erro ao acessar câmera',
+            description: message,
+            variant: 'destructive',
+          })
+        }
       />
-      <div className="page-header">
+      <div className="page-header flex-col gap-3 sm:flex-row">
         <div>
-          <h1 className="page-title">Inventário</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="page-title text-xl sm:text-2xl">Inventário</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Conferência de bens patrimoniais
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setQrOpen(true)} disabled={!effectiveId || selectedInventario?.status !== 'ABERTO'}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              if (!effectiveId) {
+                toast({
+                  title: 'Selecione um inventário',
+                  description: 'Escolha o inventário ativo antes de ler o QR Code.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              if (!selectedSetorId) {
+                toast({
+                  title: 'Selecione o setor',
+                  description: 'Informe o setor em que está conferindo antes de ler o QR Code.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              setQrOpen(true);
+            }} 
+            disabled={!effectiveId || selectedInventario?.status !== 'ABERTO'}
+            className="flex-1 sm:flex-initial"
+          >
             <QrCode className="mr-2 h-4 w-4" />
-            Ler QR Code
+            <span className="hidden xs:inline">Ler QR Code</span>
+            <span className="xs:hidden">QR</span>
           </Button>
-          <Button onClick={() => setDialogNovo(true)}>
+          <Button onClick={() => setDialogNovo(true)} className="flex-1 sm:flex-initial">
             <Plus className="mr-2 h-4 w-4" />
-            Novo Inventário
+            <span className="hidden xs:inline">Novo Inventário</span>
+            <span className="xs:hidden">Novo</span>
           </Button>
         </div>
       </div>
 
       {inventarios.length > 0 && (
-        <div className="card-corporate p-4">
-          <Label className="text-muted-foreground">Inventário ativo</Label>
+        <div className="card-corporate p-3 sm:p-4">
+          <Label className="text-xs sm:text-sm text-muted-foreground">Inventário ativo</Label>
           <Select
-value={effectiveId ?? undefined}
-              onValueChange={(v) => setSelectedId(v)}
+            value={effectiveId ?? undefined}
+            onValueChange={(v) => setSelectedId(v)}
           >
-            <SelectTrigger className="mt-1 max-w-md">
+            <SelectTrigger className="mt-1 w-full sm:max-w-md">
               <SelectValue placeholder="Selecione um inventário" />
             </SelectTrigger>
             <SelectContent>
@@ -219,17 +264,39 @@ value={effectiveId ?? undefined}
         </div>
       )}
 
+      {/* Setor atual para conferência (apenas frontend por enquanto) */}
+      {setores.length > 0 && (
+        <div className="card-corporate p-3 sm:p-4">
+          <Label className="text-xs sm:text-sm text-muted-foreground">Setor atual da conferência</Label>
+          <Select
+            value={selectedSetorId ?? undefined}
+            onValueChange={(v) => setSelectedSetorId(v)}
+          >
+            <SelectTrigger className="mt-1 w-full sm:max-w-md">
+              <SelectValue placeholder="Selecione o setor em que está conferindo" />
+            </SelectTrigger>
+            <SelectContent>
+              {setores.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.nome} {s.codigo ? `(${s.codigo})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {selectedInventario && (
         <>
-          <div className="card-corporate p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">{selectedInventario.descricao}</h3>
-                <p className="text-sm text-muted-foreground">
+          <div className="card-corporate p-4 sm:p-6">
+            <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-semibold truncate">{selectedInventario.descricao}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Início: {formatDate(selectedInventario.dataInicio)}
                 </p>
               </div>
-              <Badge variant="outline" className="text-sm">
+              <Badge variant="outline" className="text-xs sm:text-sm shrink-0">
                 {selectedInventario.status === 'ABERTO' ? 'Em andamento' : 'Fechado'}
               </Badge>
             </div>
@@ -240,35 +307,36 @@ value={effectiveId ?? undefined}
             </div>
             <Progress value={progress} className="h-2" />
 
-            <div className="mt-4 grid grid-cols-4 gap-4">
-              <div className="rounded-lg bg-success/10 p-3 text-center">
-                <p className="text-2xl font-bold text-success">{stats.encontrados}</p>
-                <p className="text-xs text-success">Encontrados</p>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
+              <div className="rounded-lg bg-success/10 p-2.5 sm:p-3 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-success">{stats.encontrados}</p>
+                <p className="text-[10px] sm:text-xs text-success leading-tight">Encontrados</p>
               </div>
-              <div className="rounded-lg bg-warning/10 p-3 text-center">
-                <p className="text-2xl font-bold text-warning">{stats.divergentes}</p>
-                <p className="text-xs text-warning">Divergentes</p>
+              <div className="rounded-lg bg-warning/10 p-2.5 sm:p-3 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-warning">{stats.divergentes}</p>
+                <p className="text-[10px] sm:text-xs text-warning leading-tight">Divergentes</p>
               </div>
-              <div className="rounded-lg bg-destructive/10 p-3 text-center">
-                <p className="text-2xl font-bold text-destructive">{stats.naoEncontrados}</p>
-                <p className="text-xs text-destructive">Não Encontrados</p>
+              <div className="rounded-lg bg-destructive/10 p-2.5 sm:p-3 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-destructive">{stats.naoEncontrados}</p>
+                <p className="text-[10px] sm:text-xs text-destructive leading-tight">Não Encontrados</p>
               </div>
-              <div className="rounded-lg bg-muted p-3 text-center">
-                <p className="text-2xl font-bold text-muted-foreground">{stats.pendentes}</p>
-                <p className="text-xs text-muted-foreground">Pendentes</p>
+              <div className="rounded-lg bg-muted p-2.5 sm:p-3 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-muted-foreground">{stats.pendentes}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Pendentes</p>
               </div>
             </div>
 
             {selectedInventario.status === 'ABERTO' && (
-              <div className="mt-4">
-                <Button variant="outline" size="sm" onClick={() => setDialogAddItem(true)}>
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" size="sm" onClick={() => setDialogAddItem(true)} className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
-                  Adicionar bem ao inventário
+                  <span className="hidden xs:inline">Adicionar bem ao inventário</span>
+                  <span className="xs:hidden">Adicionar bem</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-2"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     if (confirm('Fechar este inventário? Não será possível adicionar mais itens.')) {
                       closeInventario(selectedInventario.id)
@@ -381,30 +449,30 @@ function InventoryItemRow({
   const config = statusConfig[status];
   const StatusIcon = config.icon;
   return (
-    <div className="card-corporate flex items-center justify-between p-4 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-4">
-        <div className={cn('flex h-10 w-10 items-center justify-center rounded-full', config.className)}>
+    <div className="card-corporate flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', config.className)}>
           <StatusIcon className="h-5 w-5" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-medium text-primary">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs sm:text-sm font-medium text-primary break-all">
               {item.numeroPatrimonial ?? item.bemId}
             </span>
-            <span className={cn('status-badge', config.className)}>{config.label}</span>
+            <span className={cn('status-badge text-[10px] sm:text-xs', config.className)}>{config.label}</span>
           </div>
           {item.divergencia && (
-            <p className="mt-0.5 text-sm text-muted-foreground">{item.divergencia}</p>
+            <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground break-words">{item.divergencia}</p>
           )}
         </div>
       </div>
-      <div className="text-right">
+      <div className="text-left sm:text-right w-full sm:w-auto">
         {item.conferido ? (
           <p className="text-xs text-muted-foreground">
             {formatDate(item.dataConferencia)}
           </p>
         ) : (
-          <Button size="sm" onClick={onConferir}>
+          <Button size="sm" onClick={onConferir} className="w-full sm:w-auto">
             Conferir
           </Button>
         )}
@@ -428,15 +496,18 @@ function DialogNovoInventario({
   const [dataInicio, setDataInicio] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  const [tipo, setTipo] = useState<TipoInventario>('GERAL');
   const mutation = useMutation({
     mutationFn: () =>
       createInventario({
         descricao,
         dataInicio: new Date(dataInicio).toISOString().slice(0, 10),
+        tipo,
       }),
     onSuccess: () => {
       setDescricao('');
       setDataInicio(new Date().toISOString().slice(0, 10));
+      setTipo('GERAL');
       onSuccess();
     },
     onError: (e: Error) => onError(e.message),
@@ -473,6 +544,18 @@ function DialogNovoInventario({
               value={dataInicio}
               onChange={(e) => setDataInicio(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de inventário *</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as TipoInventario)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GERAL">Inventário geral (100% dos bens)</SelectItem>
+                <SelectItem value="PARCIAL">Inventário parcial/manual</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

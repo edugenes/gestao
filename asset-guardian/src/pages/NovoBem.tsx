@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createBem, type CreateBemBody } from '@/lib/api-bens';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import {
   fetchCategorias,
   fetchSubcategoriasByCategoria,
@@ -40,6 +41,7 @@ const SITUACAO_OPTIONS = [
 export default function NovoBem() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [numeroPatrimonial, setNumeroPatrimonial] = useState('');
   const [setorId, setSetorId] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
@@ -50,6 +52,7 @@ export default function NovoBem() {
   const [valorAquisicao, setValorAquisicao] = useState('');
   const [dataAquisicao, setDataAquisicao] = useState('');
   const [vidaUtilMeses, setVidaUtilMeses] = useState('');
+  const [garantiaMeses, setGarantiaMeses] = useState('');
   const [estadoConservacao, setEstadoConservacao] = useState<string>('BOM');
   const [situacao, setSituacao] = useState<string>('EM_USO');
   const [observacoes, setObservacoes] = useState('');
@@ -75,6 +78,8 @@ export default function NovoBem() {
   const mutation = useMutation({
     mutationFn: (body: CreateBemBody) => createBem(body),
     onSuccess: (data) => {
+      invalidateDashboardQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['bens'] });
       toast({ title: 'Bem patrimonial cadastrado. Imprima a etiqueta para colar no bem.' });
       navigate(`/bens/${data.id}/etiqueta`);
     },
@@ -121,6 +126,7 @@ export default function NovoBem() {
       valorAquisicao: valorNum,
       dataAquisicao: dataAquisicao,
       vidaUtilMeses: vidaNum,
+      garantiaMeses: garantiaMeses ? parseInt(garantiaMeses, 10) : null,
       estadoConservacao: estadoConservacao as CreateBemBody['estadoConservacao'],
       situacao: situacao as CreateBemBody['situacao'],
       observacoes: observacoes.trim() || null,
@@ -253,7 +259,7 @@ export default function NovoBem() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="space-y-2">
                 <Label htmlFor="valorAquisicao">Valor de aquisição (R$) *</Label>
                 <Input
@@ -283,6 +289,17 @@ export default function NovoBem() {
                   value={vidaUtilMeses}
                   onChange={(e) => setVidaUtilMeses(e.target.value)}
                   placeholder="Ex: 60"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="garantiaMeses">Garantia (meses)</Label>
+                <Input
+                  id="garantiaMeses"
+                  type="number"
+                  min={1}
+                  value={garantiaMeses}
+                  onChange={(e) => setGarantiaMeses(e.target.value)}
+                  placeholder="Opcional"
                 />
               </div>
               <div className="space-y-2">

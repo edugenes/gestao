@@ -4,6 +4,10 @@ export const createInventarioSchema = z
   .object({
     descricao: z.string().min(1, 'Descrição obrigatória').max(500),
     dataInicio: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)),
+    // tipo de inventário:
+    // - GERAL: inclui automaticamente todos os bens ativos e não baixados
+    // - PARCIAL: inventário manual (itens adicionados depois)
+    tipo: z.enum(['GERAL', 'PARCIAL']).optional(),
   })
   .refine(
     (d) => {

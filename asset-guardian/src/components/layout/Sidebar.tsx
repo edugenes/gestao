@@ -35,20 +35,26 @@ const menuItems = [
 ];
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // Por padrão colapsada no mobile
   const location = useLocation();
 
   return (
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        // No mobile: sempre colapsada (apenas ícones, 14 = 3.5rem)
+        // Em telas médias+: pode expandir/colapsar
+        collapsed ? 'w-14' : 'w-14 md:w-64'
       )}
     >
       {/* Header */}
-      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
+      <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-2 md:px-4">
+        {collapsed ? (
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
+            <Building className="h-5 w-5 text-sidebar-primary-foreground" />
+          </div>
+        ) : (
+          <div className="hidden md:flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
               <Building className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
@@ -58,15 +64,10 @@ export function Sidebar() {
             </div>
           </div>
         )}
-        {collapsed && (
-          <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Building className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-        )}
       </div>
 
       {/* Navigation */}
-      <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 py-4">
+      <nav className="scrollbar-thin flex-1 overflow-y-auto px-2 py-4 md:px-3">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -77,12 +78,13 @@ export function Sidebar() {
                   className={cn(
                     'nav-item',
                     isActive ? 'nav-item-active' : 'nav-item-inactive',
-                    collapsed && 'justify-center px-2'
+                    'justify-center md:justify-start',
+                    collapsed ? 'px-2' : 'px-2 md:px-3'
                   )}
-                  title={collapsed ? item.label : undefined}
+                  title={item.label}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && <span className="hidden md:inline">{item.label}</span>}
                 </NavLink>
               </li>
             );
@@ -90,10 +92,10 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle - apenas em telas médias+ */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-colors hover:bg-muted"
+        className="hidden md:flex absolute -right-3 top-20 h-6 w-6 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-colors hover:bg-muted"
       >
         {collapsed ? (
           <ChevronRight className="h-3 w-3 text-muted-foreground" />

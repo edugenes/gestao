@@ -48,6 +48,7 @@ export class BensService {
       valorAquisicao: new Decimal(dto.valorAquisicao),
       dataAquisicao,
       vidaUtilMeses: dto.vidaUtilMeses,
+      garantiaMeses: dto.garantiaMeses ?? null,
       estadoConservacao: dto.estadoConservacao,
       situacao: dto.situacao ?? 'EM_USO',
       observacoes: dto.observacoes ?? null,
@@ -202,6 +203,14 @@ export class BensService {
         valorNovo: dto.vidaUtilMeses,
       });
     }
+    if (dto.garantiaMeses !== undefined && (dto.garantiaMeses ?? null) !== (bem.garantiaMeses ?? null)) {
+      updateData.garantiaMeses = dto.garantiaMeses ?? null;
+      camposParaHistorico.push({
+        campo: 'garantiaMeses',
+        valorAnterior: bem.garantiaMeses ?? null,
+        valorNovo: dto.garantiaMeses ?? null,
+      });
+    }
     if (dto.estadoConservacao !== undefined && dto.estadoConservacao !== bem.estadoConservacao) {
       updateData.estadoConservacao = dto.estadoConservacao;
       camposParaHistorico.push({
@@ -267,6 +276,7 @@ export class BensService {
       valorAquisicao: Number(bem.valorAquisicao),
       dataAquisicao: bem.dataAquisicao.toISOString(),
       vidaUtilMeses: bem.vidaUtilMeses,
+      garantiaMeses: bem.garantiaMeses,
       estadoConservacao: bem.estadoConservacao,
       situacao: bem.situacao,
       observacoes: bem.observacoes,
@@ -288,6 +298,7 @@ export interface BemResponse {
   valorAquisicao: number;
   dataAquisicao: string;
   vidaUtilMeses: number;
+  garantiaMeses: number | null;
   estadoConservacao: string;
   situacao: string;
   observacoes: string | null;

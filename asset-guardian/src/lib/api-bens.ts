@@ -17,6 +17,7 @@ export interface BemResponse {
   valorAquisicao: number;
   dataAquisicao: string;
   vidaUtilMeses: number;
+  garantiaMeses: number | null;
   estadoConservacao: string;
   situacao: string;
   observacoes: string | null;
@@ -38,6 +39,7 @@ export interface CreateBemBody {
   valorAquisicao: number;
   dataAquisicao: string;
   vidaUtilMeses: number;
+  garantiaMeses?: number | null;
   estadoConservacao: string;
   situacao?: string;
   observacoes?: string | null;
@@ -52,6 +54,7 @@ export interface UpdateBemBody {
   valorAquisicao?: number;
   dataAquisicao?: string;
   vidaUtilMeses?: number;
+  garantiaMeses?: number | null;
   estadoConservacao?: string;
   situacao?: string;
   observacoes?: string | null;

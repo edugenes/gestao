@@ -13,7 +13,8 @@ export const createBaixaSchema = z
   })
   .refine(
     (d) => {
-      const dt = typeof d.dataBaixa === 'string' ? new Date(d.dataBaixa) : d.dataBaixa;
+      const raw = d.dataBaixa;
+      const dt = typeof raw === 'string' ? new Date(raw) : (raw as Date);
       return !Number.isNaN(dt.getTime());
     },
     { message: 'Data de baixa inválida', path: ['dataBaixa'] },

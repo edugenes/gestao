@@ -27,6 +27,7 @@ import {
   type TipoMovimentacao,
   type CreateMovimentacaoBody,
 } from '@/lib/api-movimentacoes';
+import { invalidateDashboardQueries } from '@/lib/api-dashboard';
 import { fetchBens } from '@/lib/api-bens';
 import { fetchSetores } from '@/lib/api-estrutura';
 import { useToast } from '@/hooks/use-toast';
@@ -86,6 +87,7 @@ export default function Movements() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
+    invalidateDashboardQueries(queryClient);
   };
 
   return (
