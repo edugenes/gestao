@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, BarChart3, Package, PieChart, Layers } from 'lucide-react';
+import { Download, BarChart3, Package, PieChart, Layers, Printer } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -128,6 +128,10 @@ export default function Relatorios() {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -220,22 +224,74 @@ export default function Relatorios() {
         </Card>
 
         <Card className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
                 <Download className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold">Exportar lista de bens</h3>
-                <p className="text-sm text-muted-foreground">CSV (UTF-8) para uso em planilhas</p>
+                <h3 className="font-semibold">Relatório de bens</h3>
+                <p className="text-sm text-muted-foreground">
+                  Visualize abaixo, imprima ou exporte para planilha.
+                </p>
               </div>
             </div>
-            <Button onClick={handleExportCsv} disabled={exporting}>
-              {exporting ? 'Exportando…' : 'Exportar CSV'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handlePrint}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir
+              </Button>
+              <Button onClick={handleExportCsv} disabled={exporting}>
+                {exporting ? 'Exportando…' : 'Exportar CSV'}
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
+
+      {/* Tabela principal do relatório */}
+      <Card className="p-4 overflow-x-auto print:border-none">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-sm font-semibold">Bens encontrados</h2>
+            <p className="text-xs text-muted-foreground">
+              Exibindo {bens.length} de {totalBens} bens filtrados.
+            </p>
+          </div>
+        </div>
+        {bens.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum bem encontrado para os filtros selecionados.</p>
+        ) : (
+          <table className="min-w-full text-xs md:text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-muted/40">
+                <th className="px-2 py-2 text-left font-medium">Nº patrimonial</th>
+                <th className="px-2 py-2 text-left font-medium">Setor</th>
+                <th className="px-2 py-2 text-left font-medium">Subcategoria</th>
+                <th className="px-2 py-2 text-left font-medium">Situação</th>
+                <th className="px-2 py-2 text-right font-medium whitespace-nowrap">Valor aquisição</th>
+                <th className="px-2 py-2 text-left font-medium whitespace-nowrap">Data aquisição</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bens.map((b) => (
+                <tr key={b.id} className="border-b border-border/60 last:border-0">
+                  <td className="px-2 py-1 font-mono">{b.numeroPatrimonial}</td>
+                  <td className="px-2 py-1">{b.setorNome ?? '—'}</td>
+                  <td className="px-2 py-1">{b.subcategoriaNome ?? '—'}</td>
+                  <td className="px-2 py-1">{b.situacao}</td>
+                  <td className="px-2 py-1 text-right">
+                    {b.valorAquisicao != null ? formatCurrency(b.valorAquisicao) : '—'}
+                  </td>
+                  <td className="px-2 py-1">
+                    {b.dataAquisicao ? new Date(b.dataAquisicao).toLocaleDateString('pt-BR') : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
 
       {mostrarGraficos && (
         <div className="grid gap-4 md:grid-cols-2">

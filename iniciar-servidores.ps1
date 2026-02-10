@@ -3,9 +3,14 @@
 
 Write-Host "`nIniciando servidores do Sistema de Patrimônio...`n" -ForegroundColor Cyan
 
-# Verificar se estamos no diretório correto
-if (-not (Test-Path "backend") -or -not (Test-Path "asset-guardian")) {
-    Write-Host "Erro: Execute este script na raiz do projeto (onde estão as pastas 'backend' e 'asset-guardian')" -ForegroundColor Red
+# Modo DESENVOLVIMENTO: este script deve ser executado na pasta "gestao"
+$RootDir = $PSScriptRoot
+Set-Location $RootDir
+
+if (-not (Test-Path ".\backend") -or -not (Test-Path ".\asset-guardian")) {
+    Write-Host "Erro: execute este script dentro da pasta 'gestao' (onde existem as pastas 'backend' e 'asset-guardian')." -ForegroundColor Red
+    Write-Host "Local atual: $RootDir" -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
     exit 1
 }
 
@@ -27,8 +32,8 @@ if ($interfaces.Count -gt 0) {
 # Iniciar Backend
 Write-Host "Iniciando Backend (porta 3001)...`n" -ForegroundColor Yellow
 $backendJob = Start-Job -ScriptBlock {
-    Set-Location $using:PWD
-    Set-Location backend
+    Set-Location $using:RootDir
+    Set-Location ".\backend"
     npm run start:dev
 }
 
@@ -38,8 +43,8 @@ Start-Sleep -Seconds 3
 # Iniciar Frontend
 Write-Host "Iniciando Frontend (porta 8080)...`n" -ForegroundColor Yellow
 $frontendJob = Start-Job -ScriptBlock {
-    Set-Location $using:PWD
-    Set-Location asset-guardian
+    Set-Location $using:RootDir
+    Set-Location ".\asset-guardian"
     npm run dev
 }
 
