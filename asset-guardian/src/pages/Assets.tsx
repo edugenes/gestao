@@ -9,6 +9,8 @@ import { fetchBens } from '@/lib/api-bens';
 import { fetchSetores } from '@/lib/api-estrutura';
 import { getSettings } from '@/lib/settings';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { can } from '@/lib/permissions';
 
 function situacaoToStatus(situacao: string): Asset['status'] {
   switch (situacao) {
@@ -52,6 +54,9 @@ function bemToAsset(b: {
 export default function Assets() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const role = user?.role ?? 'CONSULTA';
+  const podeEditar = can(role, 'ADMIN', 'GESTOR', 'OPERADOR');
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -121,20 +126,22 @@ export default function Assets() {
             Gerencie todos os bens patrimoniais da instituição
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" disabled>
-            <Upload className="mr-2 h-4 w-4" />
-            Importar
-          </Button>
-          <Button variant="outline" disabled>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
-          <Button onClick={() => navigate('/bens/novo')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Bem
-          </Button>
-        </div>
+        {podeEditar && (
+          <div className="flex items-center gap-3">
+            <Button variant="outline" disabled>
+              <Upload className="mr-2 h-4 w-4" />
+              Importar
+            </Button>
+            <Button variant="outline" disabled>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar
+            </Button>
+            <Button onClick={() => navigate('/bens/novo')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Bem
+            </Button>
+          </div>
+        )}
       </div>
 
       <AssetFilters

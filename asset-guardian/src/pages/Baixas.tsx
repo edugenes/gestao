@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { can } from '@/lib/permissions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,6 +59,8 @@ function formatDate(iso: string): string {
 export default function Baixas() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const podeRegistrarBaixa = can(user?.role, 'ADMIN', 'GESTOR');
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -83,10 +87,12 @@ export default function Baixas() {
             Registro de baixas (irreversível). O bem passa a situação BAIXADO.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Baixa
-        </Button>
+        {podeRegistrarBaixa && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Baixa
+          </Button>
+        )}
       </div>
 
       {error && (

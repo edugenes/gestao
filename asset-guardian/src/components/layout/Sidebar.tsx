@@ -17,6 +17,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { can, MENU_ROLES } from '@/lib/permissions';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,8 +36,16 @@ const menuItems = [
 ];
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(true); // Por padrão colapsada no mobile
+  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
+  const { user } = useAuth();
+  const role = user?.role ?? 'CONSULTA';
+
+  const visibleItems = menuItems.filter((item) => {
+    const required = MENU_ROLES[item.path];
+    if (!required) return true;
+    return can(role, ...required);
+  });
 
   return (
     <aside
@@ -80,7 +90,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="scrollbar-thin flex-1 overflow-y-auto px-2 py-4 md:px-3">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <li key={item.path}>

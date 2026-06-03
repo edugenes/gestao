@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, QrCode, Check, AlertTriangle, X, Search } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { can } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -90,6 +92,8 @@ function formatDate(iso: string | null): string {
 export default function Inventory() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const podeGerenciarInventario = can(user?.role, 'ADMIN', 'GESTOR', 'OPERADOR');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSetorId, setSelectedSetorId] = useState<string | null>(null);
@@ -235,11 +239,13 @@ export default function Inventory() {
             <span className="hidden xs:inline">Ler QR Code</span>
             <span className="xs:hidden">QR</span>
           </Button>
-          <Button onClick={() => setDialogNovo(true)} className="flex-1 sm:flex-initial">
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden xs:inline">Novo Inventário</span>
-            <span className="xs:hidden">Novo</span>
-          </Button>
+          {podeGerenciarInventario && (
+            <Button onClick={() => setDialogNovo(true)} className="flex-1 sm:flex-initial">
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden xs:inline">Novo Inventário</span>
+              <span className="xs:hidden">Novo</span>
+            </Button>
+          )}
         </div>
       </div>
 
