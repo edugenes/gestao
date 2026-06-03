@@ -45,7 +45,7 @@ export class UsuariosService {
   async create(dto: CreateUserDto): Promise<{ id: string; email: string; name: string; role: string }> {
     const existing = await this.repository.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException('E-mail já cadastrado');
+      throw new ConflictException('Login já cadastrado');
     }
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     const user = await this.repository.create({

@@ -39,6 +39,11 @@ export interface ListBensFilter {
   setorId?: string;
   situacao?: SituacaoBem;
   numeroPatrimonial?: string; // busca parcial
+  categoriaId?: string;
+  valorMin?: number;
+  valorMax?: number;
+  dataInicio?: Date;
+  dataFim?: Date;
 }
 
 @Injectable()
@@ -57,7 +62,14 @@ export class BensRepository {
   async findById(id: string): Promise<Bem | null> {
     return this.prisma.bem.findFirst({
       where: { id, deletedAt: null },
-      include: { setor: true, subcategoria: true },
+      include: {
+        setor: true,
+        subcategoria: {
+          include: {
+            categoria: true,
+          },
+        },
+      },
     });
   }
 
@@ -78,12 +90,34 @@ export class BensRepository {
     if (filter.numeroPatrimonial) {
       where.numeroPatrimonial = { contains: filter.numeroPatrimonial, mode: 'insensitive' };
     }
+    if (filter.categoriaId) {
+      where.subcategoria = { categoriaId: filter.categoriaId };
+    }
+    if (filter.valorMin != null || filter.valorMax != null) {
+      where.valorAquisicao = {
+        ...(filter.valorMin != null ? { gte: new Decimal(filter.valorMin) } : {}),
+        ...(filter.valorMax != null ? { lte: new Decimal(filter.valorMax) } : {}),
+      };
+    }
+    if (filter.dataInicio || filter.dataFim) {
+      where.dataAquisicao = {
+        ...(filter.dataInicio ? { gte: filter.dataInicio } : {}),
+        ...(filter.dataFim ? { lte: filter.dataFim } : {}),
+      };
+    }
     return this.prisma.bem.findMany({
       where,
       orderBy: { numeroPatrimonial: 'asc' },
       skip,
       take,
-      include: { setor: true, subcategoria: true },
+      include: {
+        setor: true,
+        subcategoria: {
+          include: {
+            categoria: true,
+          },
+        },
+      },
     });
   }
 
@@ -94,6 +128,21 @@ export class BensRepository {
     if (filter.numeroPatrimonial) {
       where.numeroPatrimonial = { contains: filter.numeroPatrimonial, mode: 'insensitive' };
     }
+    if (filter.categoriaId) {
+      where.subcategoria = { categoriaId: filter.categoriaId };
+    }
+    if (filter.valorMin != null || filter.valorMax != null) {
+      where.valorAquisicao = {
+        ...(filter.valorMin != null ? { gte: new Decimal(filter.valorMin) } : {}),
+        ...(filter.valorMax != null ? { lte: new Decimal(filter.valorMax) } : {}),
+      };
+    }
+    if (filter.dataInicio || filter.dataFim) {
+      where.dataAquisicao = {
+        ...(filter.dataInicio ? { gte: filter.dataInicio } : {}),
+        ...(filter.dataFim ? { lte: filter.dataFim } : {}),
+      };
+    }
     return this.prisma.bem.count({ where });
   }
 
@@ -101,7 +150,14 @@ export class BensRepository {
     return this.prisma.bem.update({
       where: { id },
       data,
-      include: { setor: true, subcategoria: true },
+      include: {
+        setor: true,
+        subcategoria: {
+          include: {
+            categoria: true,
+          },
+        },
+      },
     });
   }
 
@@ -109,7 +165,14 @@ export class BensRepository {
     return this.prisma.bem.update({
       where: { id },
       data: { deletedAt: new Date(), active: false },
-      include: { setor: true, subcategoria: true },
+      include: {
+        setor: true,
+        subcategoria: {
+          include: {
+            categoria: true,
+          },
+        },
+      },
     });
   }
 

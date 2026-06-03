@@ -173,7 +173,7 @@ export default function AssetDetail() {
                 <p className="mt-1 font-mono text-sm">{bem.numeroSerie ?? '-'}</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Subcategoria</label>
+                <label className="text-xs font-medium text-muted-foreground">Categoria</label>
                 <p className="mt-1">
                   <Badge variant="outline">{bem.subcategoriaNome ?? '-'}</Badge>
                 </p>

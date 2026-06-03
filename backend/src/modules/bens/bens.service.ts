@@ -58,7 +58,16 @@ export class BensService {
   }
 
   async findMany(
-    filter: { setorId?: string; situacao?: string; numeroPatrimonial?: string },
+    filter: {
+      setorId?: string;
+      situacao?: string;
+      numeroPatrimonial?: string;
+      categoriaId?: string;
+      valorMin?: number;
+      valorMax?: number;
+      dataInicio?: string;
+      dataFim?: string;
+    },
     page = 1,
     limit = 20,
   ): Promise<{ data: BemResponse[]; total: number }> {
@@ -66,6 +75,11 @@ export class BensService {
     if (filter.setorId) f.setorId = filter.setorId;
     if (filter.situacao) f.situacao = filter.situacao as ListBensFilter['situacao'];
     if (filter.numeroPatrimonial) f.numeroPatrimonial = filter.numeroPatrimonial;
+    if (filter.categoriaId) f.categoriaId = filter.categoriaId;
+    if (filter.valorMin != null) f.valorMin = filter.valorMin;
+    if (filter.valorMax != null) f.valorMax = filter.valorMax;
+    if (filter.dataInicio) f.dataInicio = new Date(filter.dataInicio);
+    if (filter.dataFim) f.dataFim = new Date(filter.dataFim);
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.repository.findMany(f, skip, limit),
@@ -262,7 +276,7 @@ export class BensService {
     this.audit.log({ entity: 'Bem', entityId: id, action: 'DELETE', userId: userId ?? null, metadata: { numeroPatrimonial: bem.numeroPatrimonial } }).catch(() => {});
   }
 
-  private toResponse(bem: Bem & { setor?: { id?: string; nome: string }; subcategoria?: { id?: string; nome: string } | null }): BemResponse {
+  private toResponse(bem: Bem & { setor?: { id?: string; nome: string }; subcategoria?: { id?: string; nome: string; categoria?: { id: string; nome: string } } | null }): BemResponse {
     return {
       id: bem.id,
       numeroPatrimonial: bem.numeroPatrimonial,
@@ -270,6 +284,8 @@ export class BensService {
       setorNome: bem.setor?.nome,
       subcategoriaId: bem.subcategoriaId,
       subcategoriaNome: bem.subcategoria?.nome,
+      categoriaId: bem.subcategoria?.categoria?.id ?? null,
+      categoriaNome: bem.subcategoria?.categoria?.nome ?? null,
       marca: bem.marca,
       modelo: bem.modelo,
       numeroSerie: bem.numeroSerie,
@@ -292,6 +308,8 @@ export interface BemResponse {
   setorNome?: string;
   subcategoriaId: string | null;
   subcategoriaNome?: string | null;
+  categoriaId: string | null;
+  categoriaNome?: string | null;
   marca: string | null;
   modelo: string | null;
   numeroSerie: string | null;

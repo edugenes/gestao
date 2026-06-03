@@ -212,7 +212,7 @@ export default function EditarBem() {
             </div>
 
             <div className="space-y-2">
-              <Label>Subcategoria (opcional)</Label>
+              <Label>Categoria (opcional)</Label>
               <Select
                 value={subcategoriaId || '__none__'}
                 onValueChange={(v) => setSubcategoriaId(v === '__none__' ? '' : v)}

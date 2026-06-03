@@ -14,12 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createBem, type CreateBemBody } from '@/lib/api-bens';
+import { createBem, type CreateBemBody, fetchSubcategorias } from '@/lib/api-bens';
 import { invalidateDashboardQueries } from '@/lib/api-dashboard';
-import {
-  fetchCategorias,
-  fetchSubcategoriasByCategoria,
-} from '@/lib/api-bens';
 import { fetchSetores } from '@/lib/api-estrutura';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,7 +40,6 @@ export default function NovoBem() {
   const queryClient = useQueryClient();
   const [numeroPatrimonial, setNumeroPatrimonial] = useState('');
   const [setorId, setSetorId] = useState('');
-  const [categoriaId, setCategoriaId] = useState('');
   const [subcategoriaId, setSubcategoriaId] = useState('');
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
@@ -61,19 +56,13 @@ export default function NovoBem() {
     queryKey: ['setores'],
     queryFn: () => fetchSetores({ limit: 200 }),
   });
-  const { data: categoriasData } = useQuery({
-    queryKey: ['categorias'],
-    queryFn: () => fetchCategorias({ limit: 200 }),
-  });
   const { data: subcategoriasData } = useQuery({
-    queryKey: ['subcategorias', categoriaId],
-    queryFn: () => fetchSubcategoriasByCategoria(categoriaId),
-    enabled: !!categoriaId,
+    queryKey: ['subcategorias-all'],
+    queryFn: () => fetchSubcategorias({ limit: 300 }),
   });
 
   const setores = setoresData?.data ?? [];
-  const categorias = categoriasData?.data ?? [];
-  const subcategorias = subcategoriasData ?? [];
+  const subcategorias = subcategoriasData?.data ?? [];
 
   const mutation = useMutation({
     mutationFn: (body: CreateBemBody) => createBem(body),
@@ -134,11 +123,6 @@ export default function NovoBem() {
     mutation.mutate(body);
   };
 
-  const handleCategoriaChange = (value: string) => {
-    setCategoriaId(value === '__none__' ? '' : value);
-    setSubcategoriaId('');
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -187,43 +171,24 @@ export default function NovoBem() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Categoria (opcional)</Label>
-                <Select value={categoriaId || '__none__'} onValueChange={handleCategoriaChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nenhuma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {categorias.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Subcategoria (opcional)</Label>
-                <Select
-                  value={subcategoriaId || '__none__'}
-                  onValueChange={(v) => setSubcategoriaId(v === '__none__' ? '' : v)}
-                  disabled={!categoriaId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nenhuma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {subcategorias.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Categoria (opcional)</Label>
+              <Select
+                value={subcategoriaId || '__none__'}
+                onValueChange={(v) => setSubcategoriaId(v === '__none__' ? '' : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhuma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhuma</SelectItem>
+                  {subcategorias.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">

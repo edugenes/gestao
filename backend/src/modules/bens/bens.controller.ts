@@ -48,6 +48,11 @@ export class BensController {
   @ApiQuery({ name: 'setorId', required: false })
   @ApiQuery({ name: 'situacao', required: false })
   @ApiQuery({ name: 'numeroPatrimonial', required: false, description: 'Busca parcial' })
+  @ApiQuery({ name: 'categoriaId', required: false })
+  @ApiQuery({ name: 'valorMin', required: false, description: 'Valor de aquisição mínimo (R$)' })
+  @ApiQuery({ name: 'valorMax', required: false, description: 'Valor de aquisição máximo (R$)' })
+  @ApiQuery({ name: 'dataInicio', required: false, description: 'Data de aquisição inicial (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'dataFim', required: false, description: 'Data de aquisição final (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: 'Lista paginada' })
   async findMany(
     @Query('page') page?: string,
@@ -55,11 +60,25 @@ export class BensController {
     @Query('setorId') setorId?: string,
     @Query('situacao') situacao?: string,
     @Query('numeroPatrimonial') numeroPatrimonial?: string,
+    @Query('categoriaId') categoriaId?: string,
+    @Query('valorMin') valorMin?: string,
+    @Query('valorMax') valorMax?: string,
+    @Query('dataInicio') dataInicio?: string,
+    @Query('dataFim') dataFim?: string,
   ): Promise<{ data: BemResponse[]; total: number }> {
     const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
     const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 20;
     return this.service.findMany(
-      { setorId, situacao, numeroPatrimonial },
+      {
+        setorId,
+        situacao,
+        numeroPatrimonial,
+        categoriaId,
+        valorMin: valorMin ? Number(valorMin) : undefined,
+        valorMax: valorMax ? Number(valorMax) : undefined,
+        dataInicio,
+        dataFim,
+      },
       pageNum,
       limitNum,
     );

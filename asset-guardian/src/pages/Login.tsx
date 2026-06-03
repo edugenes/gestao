@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Loader2, Wifi } from 'lucide-react';
+import { Loader2, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,11 +77,17 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-sm space-y-8 rounded-xl border bg-card p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Building className="h-7 w-7" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center">
+            <img
+              src="/logo-fpf.png"
+              alt="Logomarca"
+              className="h-16 w-16 object-contain"
+            />
           </div>
-          <h1 className="text-xl font-semibold">Ventrys</h1>
+          <h1 className="text-xl font-semibold text-center">
+            Sistema de Patrimônio
+          </h1>
           <p className="text-center text-sm text-muted-foreground">
             Entre com suas credenciais para acessar o sistema
           </p>

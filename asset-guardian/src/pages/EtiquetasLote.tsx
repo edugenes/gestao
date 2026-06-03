@@ -157,23 +157,37 @@ export default function EtiquetasLote() {
               className="etiqueta-cell flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-white p-4 print:border-none print:border-0 print:shadow-none print:w-[50mm] print:min-h-[30mm] print:inline-flex"
             >
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 bg-white p-1">
-                  <QRCodeSVG
-                    value={bem.numeroPatrimonial}
-                    size={80}
-                    level="M"
-                    includeMargin={false}
-                    bgColor="#ffffff"
-                    fgColor="#000000"
+                {/* Logo à esquerda, aproximadamente o DOBRO do QR (80px -> 160px) */}
+                <div
+                  className="flex items-center justify-center"
+                  style={{ width: 160, height: 160 }}
+                >
+                  <img
+                    src="/logo-fpf.png"
+                    alt="Logomarca"
+                    className="h-full w-full object-contain"
                   />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-mono text-lg font-bold tracking-tight text-black">
-                    {bem.numeroPatrimonial}
-                  </p>
-                  <p className="mt-0.5 max-w-[140px] truncate text-xs text-black">
-                    {descricao(bem)}
-                  </p>
+                {/* QR + texto */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 bg-white p-1">
+                    <QRCodeSVG
+                      value={bem.numeroPatrimonial}
+                      size={80}
+                      level="M"
+                      includeMargin={false}
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-mono text-lg font-bold tracking-tight text-black">
+                      {bem.numeroPatrimonial}
+                    </p>
+                    <p className="mt-0.5 max-w-[110px] truncate text-xs text-black">
+                      {descricao(bem)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

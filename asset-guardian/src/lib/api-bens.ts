@@ -11,6 +11,8 @@ export interface BemResponse {
   setorNome?: string;
   subcategoriaId: string | null;
   subcategoriaNome?: string | null;
+  categoriaId: string | null;
+  categoriaNome?: string | null;
   marca: string | null;
   modelo: string | null;
   numeroSerie: string | null;
@@ -67,13 +69,29 @@ export interface BemEtiquetaItem {
   modelo: string | null;
 }
 
-export function fetchBens(params: { page?: number; limit?: number; setorId?: string; situacao?: string; numeroPatrimonial?: string } = {}) {
+export function fetchBens(params: {
+  page?: number;
+  limit?: number;
+  setorId?: string;
+  situacao?: string;
+  numeroPatrimonial?: string;
+  categoriaId?: string;
+  valorMin?: number;
+  valorMax?: number;
+  dataInicio?: string;
+  dataFim?: string;
+} = {}) {
   const sp = new URLSearchParams();
   if (params.page != null) sp.set('page', String(params.page));
   if (params.limit != null) sp.set('limit', String(params.limit));
   if (params.setorId) sp.set('setorId', params.setorId);
   if (params.situacao) sp.set('situacao', params.situacao);
   if (params.numeroPatrimonial) sp.set('numeroPatrimonial', params.numeroPatrimonial);
+  if (params.categoriaId) sp.set('categoriaId', params.categoriaId);
+  if (params.valorMin != null) sp.set('valorMin', String(params.valorMin));
+  if (params.valorMax != null) sp.set('valorMax', String(params.valorMax));
+  if (params.dataInicio) sp.set('dataInicio', params.dataInicio);
+  if (params.dataFim) sp.set('dataFim', params.dataFim);
   const q = sp.toString();
   return apiGet<BensListResponse>(`/bens${q ? `?${q}` : ''}`);
 }

@@ -21,7 +21,7 @@ function formatCurrency(value: number): string {
 }
 
 function buildBensCsv(rows: Array<Record<string, string | number | null>>): string {
-  const headers = ['Número Patrimonial', 'Setor', 'Subcategoria', 'Marca', 'Modelo', 'Valor Aquisição', 'Data Aquisição', 'Situação'];
+  const headers = ['Número Patrimonial', 'Setor', 'Categoria', 'Marca', 'Modelo', 'Valor Aquisição', 'Data Aquisição', 'Situação'];
   const escape = (v: string | number | null) => {
     const s = v == null ? '' : String(v);
     return s.includes(';') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
@@ -43,6 +43,11 @@ export default function Relatorios() {
   const [filtroSetorId, setFiltroSetorId] = useState<string | 'todos'>('todos');
   const [filtroSituacao, setFiltroSituacao] = useState<string | 'todas'>('todas');
   const [filtroNumero, setFiltroNumero] = useState('');
+  const [filtroCategoriaId, setFiltroCategoriaId] = useState<string | 'todas'>('todas');
+  const [filtroValorMin, setFiltroValorMin] = useState('');
+  const [filtroValorMax, setFiltroValorMax] = useState('');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
   const [mostrarGraficos, setMostrarGraficos] = useState(true);
 
   const { data: stats } = useQuery({
@@ -55,8 +60,25 @@ export default function Relatorios() {
     queryFn: () => fetchSetores({ page: 1, limit: 1000 }),
   });
 
+  const { data: categoriasData } = useQuery({
+    queryKey: ['categorias-relatorios'],
+    queryFn: () => fetchCategorias({ limit: 500 }),
+  });
+
   const { data: bensData } = useQuery({
-    queryKey: ['relatorio-bens', 1, 5000, filtroSetorId, filtroSituacao, filtroNumero],
+    queryKey: [
+      'relatorio-bens',
+      1,
+      5000,
+      filtroSetorId,
+      filtroSituacao,
+      filtroNumero,
+      filtroCategoriaId,
+      filtroValorMin,
+      filtroValorMax,
+      filtroDataInicio,
+      filtroDataFim,
+    ],
     queryFn: () =>
       fetchBens({
         page: 1,
@@ -64,11 +86,17 @@ export default function Relatorios() {
         setorId: filtroSetorId !== 'todos' ? filtroSetorId : undefined,
         situacao: filtroSituacao !== 'todas' ? filtroSituacao : undefined,
         numeroPatrimonial: filtroNumero.trim() || undefined,
+        categoriaId: filtroCategoriaId !== 'todas' ? filtroCategoriaId : undefined,
+        valorMin: filtroValorMin ? Number(filtroValorMin.replace(',', '.')) : undefined,
+        valorMax: filtroValorMax ? Number(filtroValorMax.replace(',', '.')) : undefined,
+        dataInicio: filtroDataInicio || undefined,
+        dataFim: filtroDataFim || undefined,
       }),
   });
 
   const bens = bensData?.data ?? [];
   const totalBens = bensData?.total ?? 0;
+  const categorias = categoriasData?.data ?? [];
 
   const bensPorSetor = (() => {
     const map = new Map<string, number>();
@@ -109,7 +137,7 @@ export default function Relatorios() {
           all.push({
             'Número Patrimonial': b.numeroPatrimonial,
             'Setor': b.setorNome ?? null,
-            'Subcategoria': b.subcategoriaNome ?? null,
+            'Categoria': b.subcategoriaNome ?? null,
             'Marca': b.marca ?? null,
             'Modelo': b.modelo ?? null,
             'Valor Aquisição': b.valorAquisicao,
@@ -191,6 +219,62 @@ export default function Relatorios() {
               value={filtroNumero}
               onChange={(e) => setFiltroNumero(e.target.value)}
               placeholder="Ex: 2013000"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Categoria</Label>
+            <Select
+              value={filtroCategoriaId}
+              onValueChange={(v) => setFiltroCategoriaId(v as typeof filtroCategoriaId)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as categorias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {categorias.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Valor mín. (R$)</Label>
+            <Input
+              value={filtroValorMin}
+              onChange={(e) => setFiltroValorMin(e.target.value)}
+              placeholder="Ex: 1000"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Valor máx. (R$)</Label>
+            <Input
+              value={filtroValorMax}
+              onChange={(e) => setFiltroValorMax(e.target.value)}
+              placeholder="Ex: 50000"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Data aquisição (de)</Label>
+            <Input
+              type="date"
+              value={filtroDataInicio}
+              onChange={(e) => setFiltroDataInicio(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Data aquisição (até)</Label>
+            <Input
+              type="date"
+              value={filtroDataFim}
+              onChange={(e) => setFiltroDataFim(e.target.value)}
             />
           </div>
 

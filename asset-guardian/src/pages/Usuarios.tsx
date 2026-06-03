@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   fetchUsuarios,
   createUsuario,
+  updateUsuario,
   type UsuarioResponse,
   type Role,
   type CreateUsuarioBody,
@@ -93,10 +94,11 @@ export default function Usuarios() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>E-mail / Login</TableHead>
+                <TableHead>Login</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,6 +118,9 @@ export default function Usuarios() {
                       <Badge variant={u.active ? 'default' : 'secondary'}>
                         {u.active ? 'Ativo' : 'Inativo'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <DialogEditarUsuarioTrigger usuario={u} onUpdated={invalidate} />
                     </TableCell>
                   </TableRow>
                 ))
@@ -163,6 +168,163 @@ export default function Usuarios() {
   );
 }
 
+function DialogEditarUsuarioTrigger({
+  usuario,
+  onUpdated,
+}: {
+  usuario: UsuarioResponse;
+  onUpdated: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <DialogEditarUsuario
+      open={open}
+      onOpenChange={setOpen}
+      usuario={usuario}
+      onUpdated={onUpdated}
+    >
+      <Button
+        size="icon"
+        variant="outline"
+        className="h-7 w-7"
+        onClick={() => setOpen(true)}
+        type="button"
+      >
+        <Pencil className="h-3 w-3" />
+      </Button>
+    </DialogEditarUsuario>
+  );
+}
+
+function DialogEditarUsuario({
+  open,
+  onOpenChange,
+  usuario,
+  onUpdated,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  usuario: UsuarioResponse;
+  onUpdated: () => void;
+  children: React.ReactNode;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(usuario.name);
+  const [role, setRole] = useState<Role>(usuario.role as Role);
+  const [active, setActive] = useState<boolean>(usuario.active);
+  const [newPassword, setNewPassword] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      updateUsuario(usuario.id, {
+        name: name.trim() || undefined,
+        role,
+        active,
+        password: newPassword ? newPassword : undefined,
+      }),
+    onSuccess: () => {
+      toast({ title: 'Usuário atualizado.' });
+      onUpdated();
+      onOpenChange(false);
+      setNewPassword('');
+    },
+    onError: (e: Error) =>
+      toast({ title: 'Erro ao atualizar usuário', description: e.message, variant: 'destructive' }),
+  });
+
+  const toggleActive = () => {
+    setActive((prev) => !prev);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar usuário</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newPassword && newPassword.length < 8) {
+              toast({
+                title: 'Senha muito curta',
+                description: 'A nova senha deve ter no mínimo 8 caracteres.',
+                variant: 'destructive',
+              });
+              return;
+            }
+            mutation.mutate();
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-1">
+            <Label>Login</Label>
+            <Input value={usuario.email} disabled className="bg-muted" />
+          </div>
+          <div className="space-y-1">
+            <Label>Nome *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>Nova senha (opcional)</Label>
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Deixe em branco para não alterar"
+            />
+            <p className="text-xs text-muted-foreground">
+              Mínimo de 8 caracteres. Use apenas se quiser trocar a senha.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label>Perfil *</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between border rounded-md px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>Status da conta</Label>
+              <p className="text-xs text-muted-foreground">
+                {active ? 'Usuário poderá acessar o sistema.' : 'Usuário está bloqueado para login.'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant={active ? 'outline' : 'destructive'}
+              size="sm"
+              onClick={toggleActive}
+            >
+              <Power className="mr-1 h-3 w-3" />
+              {active ? 'Desativar' : 'Ativar'}
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+      {children}
+    </Dialog>
+  );
+}
+
 function DialogNovoUsuario({
   open,
   onOpenChange,
@@ -194,7 +356,7 @@ function DialogNovoUsuario({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      onError('Informe o e-mail.');
+      onError('Informe o login.');
       return;
     }
     if (!name.trim()) {
@@ -206,7 +368,7 @@ function DialogNovoUsuario({
       return;
     }
     mutation.mutate({
-      email: email.trim().toLowerCase(),
+      email: email.trim(),
       name: name.trim(),
       password,
       role,
@@ -221,13 +383,13 @@ function DialogNovoUsuario({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">E-mail *</Label>
+            <Label htmlFor="email">Login *</Label>
             <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@exemplo.com"
+              placeholder="Ex: admin"
             />
           </div>
           <div className="space-y-2">

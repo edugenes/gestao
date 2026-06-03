@@ -19,7 +19,8 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "import:bens-imobilizado": "ts-node prisma/import-bens-imobilizado.ts",
     "import:setores-fpf": "ts-node prisma/import-setores-fpf.ts",
-    "import:bens-crosscheck": "ts-node prisma/import-bens-crosscheck.ts"
+    "import:bens-crosscheck": "ts-node prisma/import-bens-crosscheck.ts",
+    "seed:subcategorias-basicas": "ts-node prisma/add-subcategorias-basicas.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

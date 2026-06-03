@@ -15,7 +15,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Building,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -47,20 +46,32 @@ export function Sidebar() {
         collapsed ? 'w-14' : 'w-14 md:w-64'
       )}
     >
-      {/* Header */}
+      {/* Header com logo institucional */}
       <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-2 md:px-4">
         {collapsed ? (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Building className="h-5 w-5 text-sidebar-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center">
+            <img
+              src="/logo-fpf.png"
+              alt="Logomarca"
+              className="h-9 w-9 object-contain"
+            />
           </div>
         ) : (
-          <div className="hidden md:flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-              <Building className="h-5 w-5 text-sidebar-primary-foreground" />
+          <div className="hidden md:flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center">
+              <img
+                src="/logo-fpf.png"
+                alt="Logomarca"
+                className="h-9 w-9 object-contain"
+              />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-sidebar-foreground">Ventrys</span>
-              <span className="text-xs text-sidebar-foreground/60">Gestão de Patrimônio</span>
+              <span className="text-sm font-semibold text-sidebar-foreground">
+                Patrimônio
+              </span>
+              <span className="text-xs text-sidebar-foreground/60">
+                Controle de ativos
+              </span>
             </div>
           </div>
         )}

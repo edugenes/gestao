@@ -66,24 +66,38 @@ export default function EtiquetaBem() {
 
       {/* Área da etiqueta – tamanho típico para etiquetadora (ex.: 50x30mm) */}
       <div className="etiqueta-container flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-white p-4 print:border-none print:border-0 print:shadow-none">
-        <div className="flex items-center gap-4">
-          <div className="flex-shrink-0 bg-white p-1">
-            <QRCodeSVG
-              value={bem.numeroPatrimonial}
-              size={120}
-              level="M"
-              includeMargin={false}
-              bgColor="#ffffff"
-              fgColor="#000000"
+        <div className="flex items-center gap-3">
+          {/* Logo institucional à esquerda, aproximadamente o DOBRO do QR */}
+          <div
+            className="flex items-center justify-center"
+            style={{ width: 240, height: 240 }}
+          >
+            <img
+              src="/logo-fpf.png"
+              alt="Logomarca"
+              className="h-full w-full object-contain"
             />
           </div>
-          <div className="min-w-0">
-            <p className="font-mono text-2xl font-bold tracking-tight text-black">
-              {bem.numeroPatrimonial}
-            </p>
-            <p className="mt-1 max-w-[180px] truncate text-sm text-black">
-              {descricao}
-            </p>
+          {/* QR + textos */}
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 bg-white p-1">
+              <QRCodeSVG
+                value={bem.numeroPatrimonial}
+                size={120}
+                level="M"
+                includeMargin={false}
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="font-mono text-2xl font-bold tracking-tight text-black">
+                {bem.numeroPatrimonial}
+              </p>
+              <p className="mt-1 max-w-[150px] truncate text-sm text-black">
+                {descricao}
+              </p>
+            </div>
           </div>
         </div>
       </div>
